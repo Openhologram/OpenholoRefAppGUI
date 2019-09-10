@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="0_MainFrame">
+      <UniqueIdentifier>{f8de9771-70c5-4098-b80a-d74188cd064e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1_Tab">
+      <UniqueIdentifier>{48388f1d-ca02-4dad-9c38-4354b2526f23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="99_etc">
+      <UniqueIdentifier>{c1658947-f14c-4196-b5cf-9cb0ceb1b189}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="99_etc\Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="99_etc\Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="99_etc\Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="2_Dialog">
+      <UniqueIdentifier>{e5c47a9d-cab5-4921-908f-1b70a4df27ee}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="OpenholoRefAppUI.h">
+      <Filter>0_MainFrame</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenholoRefAppUIDlg.h">
+      <Filter>0_MainFrame</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>0_MainFrame</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>0_MainFrame</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>0_MainFrame</Filter>
+    </ClInclude>
+    <ClInclude Include="Tab_DM.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
+    <ClInclude Include="Tab_LF.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
+    <ClInclude Include="Tab_MESH.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
+    <ClInclude Include="Tab_PC.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
+    <ClInclude Include="Tab_WRP.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
+    <ClInclude Include="GLUTviewer.h">
+      <Filter>99_etc\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialog_BMP_Viewer.h">
+      <Filter>2_Dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialog_Progress.h">
+      <Filter>2_Dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialog_Prompt.h">
+      <Filter>2_Dialog</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="OpenholoRefAppUI.cpp">
+      <Filter>0_MainFrame</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenholoRefAppUIDlg.cpp">
+      <Filter>0_MainFrame</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>0_MainFrame</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_DM.cpp">
+      <Filter>1_Tab</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_LF.cpp">
+      <Filter>1_Tab</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_MESH.cpp">
+      <Filter>1_Tab</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_PC.cpp">
+      <Filter>1_Tab</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_WRP.cpp">
+      <Filter>1_Tab</Filter>
+    </ClCompile>
+    <ClCompile Include="GLUTviewer.cpp">
+      <Filter>99_etc\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialog_BMP_Viewer.cpp">
+      <Filter>2_Dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialog_Progress.cpp">
+      <Filter>2_Dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialog_Prompt.cpp">
+      <Filter>2_Dialog</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\OpenHolo_icon.ico">
+      <Filter>99_etc</Filter>
+    </Image>
+    <Image Include="res\OpenholoRefAppUI.ico">
+      <Filter>99_etc</Filter>
+    </Image>
+    <Image Include="..\..\..\..\Desktop\MFC\OpenholoRefAppUI\OpenholoRefAppUI\res\OpenHolo_icon.bmp">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
+    <Image Include="res\OpenHolo_icon.bmp">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
+    <Image Include="res\KETI_logo.png">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
+    <Image Include="res\OpenHolo_logo.png">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OpenholoRefAppUI.rc">
+      <Filter>99_etc</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\OpenholoRefAppUI.rc2">
+      <Filter>99_etc</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt">
+      <Filter>99_etc</Filter>
+    </Text>
+  </ItemGroup>
+</Project>
