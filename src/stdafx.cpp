@@ -1,6 +1,6 @@
 
 // stdafx.cpp : source file that includes just the standard includes
-// OpenholoRefAppUI.pch will be the pre-compiled header
+// OpenholoRefAppGUI.pch will be the pre-compiled header
 // stdafx.obj will contain the pre-compiled type information
 
 #include "stdafx.h"

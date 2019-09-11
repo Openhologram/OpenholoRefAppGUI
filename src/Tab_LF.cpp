@@ -2,15 +2,16 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Tab_LF.h"
 #include "afxdialogex.h"
 
 // CTab_LF dialog
 
-#include "ophLightField.h"
+#include <ophLightField.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 IMPLEMENT_DYNAMIC(CTab_LF, CDialogEx)
 
@@ -30,6 +31,9 @@ CTab_LF::CTab_LF(CWnd* pParent /*=NULL*/)
 	, m_bDir(FALSE)
 	, m_bEncode(FALSE)
 	, m_idxEncode(3)
+#ifdef TEST_MODE
+	, m_bTest(FALSE)
+#endif
 {
 
 }
@@ -41,6 +45,7 @@ CTab_LF::~CTab_LF()
 void CTab_LF::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
 	DDX_Text(pDX, IDC_SCALE_X, m_distance);
 	DDX_Text(pDX, IDC_SCALE_Y, m_numimgX);
 	DDX_Text(pDX, IDC_SCALE_Z, m_numimgY);
@@ -49,9 +54,11 @@ void CTab_LF::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
 	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
 	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
+	DDX_Control(pDX, IDC_GPU_CHECK_LF, m_buttonGPU);
 	DDX_Control(pDX, IDC_GENERATE_LF, m_buttonGenerate);
 	DDX_Control(pDX, IDC_SAVE_BMP_LF, m_buttonSaveBmp);
 	DDX_Control(pDX, IDC_SAVE_OHC_LF, m_buttonSaveOhc);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
 }
 
 
@@ -72,16 +79,36 @@ END_MESSAGE_MAP()
 
 
 // CTab_LF message handlers
-
-
 BOOL CTab_LF::PreTranslateMessage(MSG* pMsg)
 {
-	// TODO: Add your specialized code here and/or call the base class
+	// TODO: Add your specialized code here and/or call the base class	
 	if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) return TRUE;
-
+#ifdef TEST_MODE
+	if (!m_bTest && pMsg->wParam == VK_SPACE) {
+		AutoTest();
+		return TRUE;
+	}
+#endif
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+#ifdef TEST_MODE
+BOOL CTab_LF::AutoTest()
+{
+	if (!m_bDir || !m_bConfig)
+		return FALSE;
+	m_bTest = TRUE;
+	Dialog_Prompt *prompt = new Dialog_Prompt;
+	if (IDOK == prompt->DoModal()) {
+		int nRepeat = prompt->GetInputInteger();
+		for (int i = 0; i < nRepeat; i++)
+			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_LF, BN_CLICKED), 0L);
+	}
+	delete prompt;
+	m_bTest = FALSE;
+	return TRUE;
+}
+#endif
 
 int CTab_LF::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -100,7 +127,7 @@ void CTab_LF::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
-	SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
+	//SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
 }
 
 
@@ -135,6 +162,7 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 		return;
 	}
 
+	m_fieldLens = m_pLightField->getFieldLens();
 	m_distance = m_pLightField->getDistRS2Holo();
 	m_numimgX = m_pLightField->getNumImage()[_X];
 	m_numimgY = m_pLightField->getNumImage()[_Y];
@@ -154,28 +182,21 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 void CTab_LF::OnBnClickedFindDir()
 {
 	// TODO: Add your control notification handler code here
-	CString path;
-	TCHAR		szPathanme[MAX_PATH] = { 0 };
-	BROWSEINFO	BrInfo;
+	TCHAR szSelPath[MAX_PATH] = { 0 };
+	TCHAR szCurPath[MAX_PATH] = { 0, };
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	ZeroMemory(&BrInfo, sizeof(BROWSEINFO));
+	CFolderPickerDialog dlg(szCurPath, OFN_FILEMUSTEXIST, NULL, 0);
+	if (dlg.DoModal() == IDOK) {
+		wsprintf(szSelPath, L"%s", dlg.GetPathName());
+	}
+	else
+		return;
 
-	BrInfo.hwndOwner = GetSafeHwnd();
-	BrInfo.pszDisplayName = szPathanme;
-	BrInfo.ulFlags = BIF_NEWDIALOGSTYLE | BIF_EDITBOX | BIF_RETURNONLYFSDIRS;
-	LPITEMIDLIST pItemIdList = ::SHBrowseForFolder(&BrInfo);
-	::SHGetPathFromIDList(pItemIdList, szPathanme);
-
-	path.Format(_T("%s"), szPathanme);
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	_tcscpy_s(m_argParam, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (m_pLightField->loadLF(mulpath, "bmp") == -1) {
+	SetCurrentDirectory(szSelPath);
+	CStringA szPath = CW2A(szSelPath);
+	if (szPath.IsEmpty()) return;
+	if (m_pLightField->loadLF(szPath, "bmp") == -1) {
 		AfxMessageBox(_TEXT("Load LF image failed"));
 		return;
 	}
@@ -256,6 +277,8 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	m_pLightField->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
 	m_pLightField->setPixelNumber(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pLightField->setWaveLength(m_wavelength, 0);
+	m_pLightField->setMode(!m_buttonGPU.GetCheck());
+	m_pLightField->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
 	Dialog_Progress progress;
 
@@ -272,6 +295,7 @@ void CTab_LF::OnBnClickedGenerate_LF()
 
 	//m_pLightField->generateHologram();
 	GetDlgItem(IDC_SAVE_OHC_LF)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_LF)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_LF)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);

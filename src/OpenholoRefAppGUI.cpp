@@ -1,11 +1,10 @@
 
-// OpenholoRefAppUI.cpp : Defines the class behaviors for the application.
+// OpenholoRefAppGUI.cpp : Defines the class behaviors for the application.
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
-#include "OpenholoRefAppUIDlg.h"
-
+#include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -42,6 +41,8 @@ BOOL COpenholoRefApp::InitInstance()
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.
+
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	INITCOMMONCONTROLSEX InitCtrls;
 	InitCtrls.dwSize = sizeof(InitCtrls);
 	// Set this to include all the common control classes you want to use

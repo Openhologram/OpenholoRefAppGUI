@@ -34,6 +34,7 @@
 #include <afxcontrolbars.h>     // MFC support for ribbons and control bars
 
 #include <atlimage.h>
+#include <afxcontrolbars.h>
 
 
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")

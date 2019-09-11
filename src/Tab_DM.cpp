@@ -2,13 +2,14 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Tab_DM.h"
 #include "afxdialogex.h"
 
-#include "ophDepthMap.h"
+#include <ophDepthMap.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 // CTab_DM dialog
 
@@ -33,6 +34,9 @@ CTab_DM::CTab_DM(CWnd* pParent /*=NULL*/)
 	, m_argParamRGBimg()
 	, m_resultPath()
 	, m_idxEncode(6)
+#ifdef TEST_MODE
+	, m_bTest(FALSE)
+#endif
 {
 
 }
@@ -56,6 +60,7 @@ void CTab_DM::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_GPU_CHECK_DM, m_buttonGPU);
 	DDX_Control(pDX, IDC_SAVE_BMP_DM, m_buttonSaveBmp);
 	DDX_Control(pDX, IDC_SAVE_OHC_DM, m_buttonSaveOhc);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
 }
 
 
@@ -78,17 +83,37 @@ END_MESSAGE_MAP()
 
 
 // CTab_DM message handlers
-
-
 BOOL CTab_DM::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: Add your specialized code here and/or call the base class	
 	if(pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) return TRUE;
-
+#ifdef TEST_MODE
+	if (!m_bTest && pMsg->wParam == VK_SPACE) {
+		AutoTest();
+		return TRUE;
+	}
+#endif
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
 
+#ifdef TEST_MODE
+BOOL CTab_DM::AutoTest()
+{
+	if (!m_bDimg || !m_bRGBimg || !m_bConfig)
+		return FALSE;
+	m_bTest = TRUE;
+	Dialog_Prompt *prompt = new Dialog_Prompt;
+	if (IDOK == prompt->DoModal()) {
+		int nRepeat = prompt->GetInputInteger();
+		for (int i = 0; i < nRepeat; i++)
+			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_DM, BN_CLICKED), 0L);
+	}
+	delete prompt;
+	m_bTest = FALSE;
+	return TRUE;
+}
+#endif
 
 int CTab_DM::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -107,7 +132,7 @@ void CTab_DM::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
-	SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
+	//SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
 }
 
 
@@ -374,10 +399,8 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	config.num_of_depth = m_numDepth;
 	config.RANDOM_PHASE = 0;
 
-	bool bCPU;
-	if (m_buttonGPU.GetCheck()) bCPU = FALSE;
-	else bCPU = TRUE;
-	m_pDepthMap->setMode(bCPU);
+	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
+	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
 	Dialog_Progress progress;
 
@@ -393,7 +416,8 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	progress.DestroyWindow();
 
 	//m_pDepthMap->generateHologram();
-	m_buttonSaveOhc.EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);

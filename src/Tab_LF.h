@@ -37,7 +37,9 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeEncodeMethodLf();
-
+#ifdef TEST_MODE
+	BOOL AutoTest();
+#endif
 	ophLF			*m_pLightField;
 	bool			m_bConfig;
 	bool			m_bDir;
@@ -47,6 +49,7 @@ public:
 
 	int				m_idxEncode;
 
+	double	m_fieldLens;
 	double	m_distance;
 	int		m_numimgX;
 	int		m_numimgY;
@@ -59,4 +62,9 @@ public:
 	CButton m_buttonGenerate;
 	CButton m_buttonSaveBmp;
 	CButton m_buttonSaveOhc;
+	CButton m_buttonGPU;
+	CButton m_buttonViewingWindow;
+#ifdef TEST_MODE
+		BOOL m_bTest;
+#endif
 };

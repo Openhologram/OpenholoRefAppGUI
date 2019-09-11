@@ -1,5 +1,5 @@
 
-// OpenholoRefAppUIDlg.h : header file
+// OpenholoRefAppGUIDlg.h : header file
 //
 
 #pragma once
@@ -22,7 +22,7 @@ public:
 
 // Dialog Data
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_OPENHOLOREFAPPUI_DIALOG };
+	enum { IDD = IDD_OPENHOLOREFAPPGUI_DIALOG };
 #endif
 
 	protected:
@@ -64,4 +64,5 @@ public:
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
 	CButton		m_buttonLog;
+	afx_msg void OnClose();
 };

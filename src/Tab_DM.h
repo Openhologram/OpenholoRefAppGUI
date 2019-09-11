@@ -37,7 +37,11 @@ public:
 	afx_msg void OnBnClickedViewDmImg();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-
+	afx_msg void OnCbnSelchangeEncodeMethodDm();
+	afx_msg void OnBnClickedEncodingDm();
+#ifdef TEST_MODE
+	BOOL AutoTest();
+#endif
 	ophDepthMap*	m_pDepthMap;
 	CString			m_szPath;
 	CString			m_szDname;
@@ -67,6 +71,8 @@ public:
 	CButton m_buttonGPU;
 	CButton m_buttonSaveBmp;
 	CButton m_buttonSaveOhc;
-	afx_msg void OnCbnSelchangeEncodeMethodDm();
-	afx_msg void OnBnClickedEncodingDm();
+	CButton m_buttonViewingWindow;
+#ifdef TEST_MODE
+	BOOL m_bTest;
+#endif
 };

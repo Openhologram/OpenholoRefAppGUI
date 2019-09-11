@@ -2,21 +2,23 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Tab_MESH.h"
 #include "afxdialogex.h"
 
 
 // CTab_MESH dialog
 
-#include "ophTriMesh.h"
+#include <ophTriMesh.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 IMPLEMENT_DYNAMIC(CTab_MESH, CDialogEx)
 
 CTab_MESH::CTab_MESH(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_MESH, pParent)
+	, m_fieldLens(0)
 	, m_objectsize(0)
 	, m_objectshiftX(0)
 	, m_objectshiftY(0)
@@ -35,6 +37,9 @@ CTab_MESH::CTab_MESH(CWnd* pParent /*=NULL*/)
 	, m_bMeshData(FALSE)
 	, m_bEncode(FALSE)
 	, m_idxEncode(3)
+#ifdef TEST_MODE
+	, m_bTest(FALSE)
+#endif
 {
 
 }
@@ -46,6 +51,7 @@ CTab_MESH::~CTab_MESH()
 void CTab_MESH::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
 	DDX_Text(pDX, IDC_SCALE_X, m_objectsize);
 	DDX_Text(pDX, IDC_SCALE_Y, m_objectshiftX);
 	DDX_Text(pDX, IDC_SCALE_Z, m_objectshiftY);
@@ -58,6 +64,8 @@ void CTab_MESH::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
 	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
 	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
+	DDX_Control(pDX, IDC_GPU_CHECK_MESH, m_buttonGPU);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
 }
 
 
@@ -84,10 +92,32 @@ BOOL CTab_MESH::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: Add your specialized code here and/or call the base class
 	if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) return TRUE;
-
+#ifdef TEST_MODE
+	if (!m_bTest && pMsg->wParam == VK_SPACE) {
+		AutoTest();
+		return TRUE;
+	}
+#endif
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+#ifdef TEST_MODE
+BOOL CTab_MESH::AutoTest()
+{
+	if (!m_bMeshData || !m_bConfig)
+		return FALSE;
+	m_bTest = TRUE;
+	Dialog_Prompt *prompt = new Dialog_Prompt;
+	if (IDOK == prompt->DoModal()) {
+		int nRepeat = prompt->GetInputInteger();
+		for (int i = 0; i < nRepeat; i++)
+			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_MESH, BN_CLICKED), 0L);
+	}
+	delete prompt;
+	m_bTest = FALSE;
+	return TRUE;
+}
+#endif
 
 int CTab_MESH::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -106,7 +136,7 @@ void CTab_MESH::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
-	SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
+	//SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
 }
 
 
@@ -142,6 +172,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	}
 
 	auto context = m_pMesh->getContext();
+	m_fieldLens = m_pMesh->getFieldLens();
 	m_objectsize = m_pMesh->getObjSize();
 	m_objectshiftX = m_pMesh->getObjShift()[_X];
 	m_objectshiftY = m_pMesh->getObjShift()[_Y];
@@ -293,6 +324,8 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 
 	//*context.wave_length = m_wavelength;
 
+	m_pMesh->setMode(!m_buttonGPU.GetCheck());
+	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;
@@ -408,24 +441,8 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 
 	if (strcmp(mulpath, "") == 0) return;
-	if (m_pMesh->saveAsOhc(mulpath)) {
-
-		//TCHAR strExecutable[FILENAME_MAX];
-		//int result = (int)FindExecutable(widepath, NULL, (LPTSTR)&strExecutable);
-
-		//if (result == 31) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Openas",	widepath, NULL, NULL, SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-		//else if (result == 32) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Open", widepath, NULL, NULL,	SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-
-		(int)::ShellExecute(NULL, _T("open"),
-			widepath,																								//실행 파일 경로
-			NULL,																							//argument value 파라미터
-			NULL, SW_SHOW);
+	if (!m_pMesh->saveAsOhc(mulpath)) {
+		MessageBox(L"Save failed", L"Error", MB_ICONWARNING);
 	}
 }
 

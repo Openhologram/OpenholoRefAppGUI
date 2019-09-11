@@ -40,7 +40,9 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeDiffMethodPc();
 	afx_msg void OnCbnSelchangeEncodeMethodPc();
-	
+#ifdef TEST_MODE
+	BOOL AutoTest();
+#endif
 	ophPointCloud *m_pPointCloud;
 
 	bool	m_bConfig;
@@ -51,6 +53,7 @@ public:
 	TCHAR	m_resultPath[MAX_PATH];
 	BOOL	m_bFinish;
 
+	double			m_fieldLens;
 	double			m_scaleX;
 	double			m_scaleY;
 	double			m_scaleZ;
@@ -68,4 +71,6 @@ public:
 	CButton m_buttonSaveBmp;
 	CButton m_buttonSaveOhc;
 	CButton m_buttonGPU;
+	CButton m_buttonViewingWindow;
+	BOOL m_bTest;
 };

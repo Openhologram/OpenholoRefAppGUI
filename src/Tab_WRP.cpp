@@ -2,20 +2,22 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Tab_WRP.h"
 #include "afxdialogex.h"
 
 
 // CTab_WRP dialog
-#include "ophWRP.h"
+#include <ophWRP.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 IMPLEMENT_DYNAMIC(CTab_WRP, CDialogEx)
 
 CTab_WRP::CTab_WRP(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_WRP, pParent)
+	, m_fieldLens(0)
 	, m_scaleX(0)
 	, m_scaleY(0)
 	, m_scaleZ(0)
@@ -33,6 +35,9 @@ CTab_WRP::CTab_WRP(CWnd* pParent /*=NULL*/)
 	, m_bPC(FALSE)
 	, m_bEncode(FALSE)
 	, m_idxEncode(0)
+#ifdef TEST_MODE
+	, m_bTest(FALSE)
+#endif
 {
 
 }
@@ -44,6 +49,7 @@ CTab_WRP::~CTab_WRP()
 void CTab_WRP::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
 	DDX_Text(pDX, IDC_SCALE_X, m_scaleX);
 	DDX_Text(pDX, IDC_SCALE_Y, m_scaleY);
 	DDX_Text(pDX, IDC_SCALE_Z, m_scaleZ);
@@ -55,6 +61,8 @@ void CTab_WRP::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
 	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
 	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Control(pDX, IDC_GPU_CHECK_WRP, m_buttonGPU);
 }
 
 
@@ -78,12 +86,34 @@ END_MESSAGE_MAP()
 
 BOOL CTab_WRP::PreTranslateMessage(MSG* pMsg)
 {
-	// TODO: Add your specialized code here and/or call the base class
+	// TODO: Add your specialized code here and/or call the base class	
 	if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) return TRUE;
-
+#ifdef TEST_MODE
+	if (!m_bTest && pMsg->wParam == VK_SPACE) {
+		AutoTest();
+		return TRUE;
+	}
+#endif
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+#ifdef TEST_MODE
+BOOL CTab_WRP::AutoTest()
+{
+	if (!m_bPC || !m_bConfig)
+		return FALSE;
+	m_bTest = TRUE;
+	Dialog_Prompt *prompt = new Dialog_Prompt;
+	if (IDOK == prompt->DoModal()) {
+		int nRepeat = prompt->GetInputInteger();
+		for (int i = 0; i < nRepeat; i++)
+			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_WRP, BN_CLICKED), 0L);
+	}
+	delete prompt;
+	m_bTest = FALSE;
+	return TRUE;
+}
+#endif
 
 int CTab_WRP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -117,7 +147,7 @@ void CTab_WRP::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
-	SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
+	//SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE);
 }
 
 
@@ -156,7 +186,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 
 	scale = m_pWRP->getScale();
 	auto context = m_pWRP->getContext();
-
+	m_fieldLens = m_pWRP->getFieldLens();
 	m_scaleX = scale[_X];
 	m_scaleY = scale[_Y];
 	m_scaleZ = scale[_Z];
@@ -249,7 +279,7 @@ UINT CallFuncWRP(void* param)
 	((ophWRP*)((parammeter*)param)->pGEN)->autoScaling();
 	((ophWRP*)((parammeter*)param)->pGEN)->calculateWRP();
 	((ophWRP*)((parammeter*)param)->pGEN)->generateHologram();
-
+	
 	*((parammeter*)param)->pFinish = TRUE;
 	((parammeter*)param)->pDialog->m_bFinished = TRUE;
 	delete param;
@@ -289,8 +319,11 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	context.pixel_number[_X] = m_pixelnumX;
 	context.pixel_number[_Y] = m_pixelnumY;
 	*context.wave_length = m_wavelength;
+	
+	m_pWRP->setMode(!m_buttonGPU.GetCheck());
 	m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
 	m_pWRP->setLocation(m_locationWRP);
+	m_pWRP->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
 	Dialog_Progress progress;
 
@@ -304,6 +337,8 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	CWinThread* pThread = AfxBeginThread(CallFuncWRP, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
+
+	GetDlgItem(IDC_SAVE_BMP_WRP)->EnableWindow(FALSE);
 	GetDlgItem(IDC_SAVE_OHC_WRP)->EnableWindow(TRUE);
 	GetDlgItem(IDC_ENCODING_WRP)->EnableWindow(TRUE);
 

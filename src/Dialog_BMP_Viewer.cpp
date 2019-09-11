@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Dialog_BMP_Viewer.h"
 #include "afxdialogex.h"
 

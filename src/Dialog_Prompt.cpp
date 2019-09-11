@@ -1,18 +1,18 @@
-// Dialog_Prompt.cpp : implementation file
+// Dialog_Prompt.cpp: 구현 파일
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
+#include "OpenholoRefAppGUI.h"
 #include "Dialog_Prompt.h"
 #include "afxdialogex.h"
 
 
-// Dialog_Prompt dialog
+// Dialog_Prompt 대화 상자
 
 IMPLEMENT_DYNAMIC(Dialog_Prompt, CDialogEx)
 
-Dialog_Prompt::Dialog_Prompt(CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_DIALOG_PROMPT, pParent)
+Dialog_Prompt::Dialog_Prompt(CWnd* pParent /*=nullptr*/)
+	: CDialogEx(IDD_DLG_PROMPT, pParent)
 {
 
 }
@@ -24,7 +24,8 @@ Dialog_Prompt::~Dialog_Prompt()
 void Dialog_Prompt::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	//DDX_Control(pDX, IDC_PROGRESS1, m_progress);
+	DDX_Text(pDX, IDC_STATIC, m_szPrompt);
+	DDX_Text(pDX, IDC_EDIT_ANSWER, m_szAnswer);
 }
 
 
@@ -32,21 +33,27 @@ BEGIN_MESSAGE_MAP(Dialog_Prompt, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// Dialog_Prompt message handlers
+// Dialog_Prompt 메시지 처리기
 
 
 BOOL Dialog_Prompt::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	// TODO:  여기에 추가 초기화 작업을 추가합니다.
+
+	m_szPrompt = L"반복 할 테스트 수를 입력하시오.";
+	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
-				  // EXCEPTION: OCX Property Pages should return FALSE
+				  // 예외: OCX 속성 페이지는 FALSE를 반환해야 합니다.
 }
 
-
-BOOL Dialog_Prompt::DestroyWindow()
+CString Dialog_Prompt::GetInputString()
 {
-	// TODO: Add your specialized code here and/or call the base class
+	return m_szAnswer;
+}
 
-	return CDialogEx::DestroyWindow();
+int Dialog_Prompt::GetInputInteger()
+{
+	return _ttoi(m_szAnswer);
 }

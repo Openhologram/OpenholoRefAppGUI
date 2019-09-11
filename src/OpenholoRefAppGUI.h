@@ -1,5 +1,5 @@
 
-// OpenholoRefAppUI.h : main header file for the PROJECT_NAME application
+// OpenholoRefAppGUI.h : main header file for the PROJECT_NAME application
 //
 
 #pragma once
@@ -12,7 +12,7 @@
 
 
 // COpenholoRefApp:
-// See OpenholoRefAppUI.cpp for the implementation of this class
+// See OpenholoRefAppGUI.cpp for the implementation of this class
 //
 
 class COpenholoRefApp : public CWinApp

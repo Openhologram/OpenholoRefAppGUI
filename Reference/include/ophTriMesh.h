@@ -48,6 +48,10 @@
 
 #include "ophGen.h"
 
+//Build Option : Multi Core Processing (OpenMP)
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 using namespace oph;
 
 /**
@@ -100,7 +104,8 @@ public:
 	* @brief Constructor
 	*/
 	explicit ophTri(void) {
-		
+		is_CPU = true;
+		is_ViewingWindow = false;
 	}
 
 protected:
@@ -119,7 +124,7 @@ private:
 	OphMeshData* meshData;					/// OphMeshData type data structure pointer
 
 private:
-
+	Real field_lens;
 	Real objSize;							/// Object maximum of width and height / unit :[m]
 	vec3 objShift;							/// Object shift value / Data structure - [shiftX, shiftY, shiftZ] / unit : [m]
 
@@ -136,7 +141,6 @@ public:
 	void setIllumination(vec3 in) { illumination = in; }
 	void setIllumination(Real inx, Real iny, Real inz) { illumination = { inx, iny, inz }; }
 	void setShadingType(int in) { SHADING_TYPE = in; }
-
 	ulonglong getNumMesh() { return meshData->n_faces; }
 	Real* getMeshData() { return triMeshArray; }
 	Complex<Real>* getAngularSpectrum() { return angularSpectrum; }
@@ -145,6 +149,7 @@ public:
 	const Real& getObjSize(void) { return objSize; }
 	const vec3& getObjShift(void) { return objShift; }
 	const vec3&	getIllumination(void) { return illumination; }
+	const Real& getFieldLens(void) { return field_lens; }
 public:
 	/**
 	* @brief	Triangular mesh basc CGH configuration file load
@@ -187,8 +192,23 @@ public:
 	*/
 	void generateMeshHologram(uint SHADING_FLAG);
 	void generateMeshHologram();
-	
+
+	/**
+	* @brief Generate a Mesh, main funtion.
+	* @return implement time (sec)
+	*/
+	void setMode(bool is_CPU);
 	//virtual int saveAsOhc(const char* fname);
+	/**
+	* @brief Set the value of a variable is_ViewingWindow(true or false)
+	* @details <pre>
+	if is_ViewingWindow == true
+	Transform viewing window
+	else
+	GPU implementation </pre>
+	* @param is_TransVW : the value for specifying whether the hologram generation method is implemented on the viewing window
+	*/
+	void setViewingWindow(bool is_ViewingWindow);
 
 private:
 	
@@ -209,6 +229,10 @@ private:
 	uint refToGlobal();
 
 	uint loadMeshText(const char* fileName);
+	inline Real transformViewingWindow(Real pt) {
+		Real transPt = -field_lens * pt / (pt - field_lens);
+		return transPt;
+	}
 private:
 
 	Real* normalizedMeshData;				/// Normalized mesh array / Data structure : N*9
@@ -235,7 +259,7 @@ private:
 	vec3 n;
 	Real shadingFactor;
 	geometric geom;
-	Real* mesh_local;
+	//Real* mesh_local;
 	Real* flx;
 	Real* fly;
 	Real* flz;
@@ -255,6 +279,10 @@ private:
 	Complex<Real>* randTerm;
 	Complex<Real>* phaseTerm;
 	Complex<Real>* convol;
+	bool is_CPU;
+	bool is_ViewingWindow;
+	std::chrono::time_point<std::chrono::system_clock> m_begin;
+	std::chrono::time_point<std::chrono::system_clock> m_end;
 
 };
 

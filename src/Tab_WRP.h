@@ -36,7 +36,9 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeEncodeMethodWrp();
 	afx_msg void OnBnClickedEncodingWrp();
-
+#ifdef TEST_MODE
+	BOOL AutoTest();
+#endif
 	ophWRP	*m_pWRP;
 	bool	m_bConfig;
 	bool	m_bPC;
@@ -47,7 +49,7 @@ public:
 	TCHAR	m_argParam[MAX_PATH];
 	TCHAR	m_resultPath[MAX_PATH];
 
-
+	double m_fieldLens;
 	double m_scaleX;
 	double m_scaleY;
 	double m_scaleZ;
@@ -59,4 +61,10 @@ public:
 	double m_pixelnumX;
 	double m_pixelnumY;
 	double m_wavelength;
+
+	CButton m_buttonGPU;
+	CButton m_buttonViewingWindow;
+#ifdef TEST_MODE
+	BOOL m_bTest;
+#endif
 };

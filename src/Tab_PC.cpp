@@ -2,8 +2,8 @@
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
-#include "OpenholoRefAppUIDlg.h"
+#include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "Tab_PC.h"
 #include "afxdialogex.h"
 
@@ -11,9 +11,10 @@
 
 // CTab_PC dialog
 
-#include "ophPointCloud.h"
+#include <ophPointCloud.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 #include "GLUTviewer.h"
 
@@ -23,6 +24,7 @@ IMPLEMENT_DYNAMIC(CTab_PC, CDialogEx)
 
 CTab_PC::CTab_PC(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_PC, pParent)
+	, m_fieldLens(0)
 	, m_scaleX(0)
 	, m_scaleY(0)
 	, m_scaleZ(0)
@@ -41,6 +43,9 @@ CTab_PC::CTab_PC(CWnd* pParent /*=NULL*/)
 	, m_idxDiff(0)
 	, m_idxEncode(6)
 	, m_bFinish(FALSE)
+#ifdef TEST_MODE
+	, m_bTest(FALSE)
+#endif
 {
 
 }
@@ -52,6 +57,7 @@ CTab_PC::~CTab_PC()
 void CTab_PC::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
 	DDX_Text(pDX, IDC_SCALE_X, m_scaleX);
 	DDX_Text(pDX, IDC_SCALE_Y, m_scaleY);
 	DDX_Text(pDX, IDC_SCALE_Z, m_scaleZ);
@@ -65,6 +71,7 @@ void CTab_PC::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SAVE_BMP_PC, m_buttonSaveBmp);
 	DDX_Control(pDX, IDC_SAVE_OHC_PC, m_buttonSaveOhc);
 	DDX_Control(pDX, IDC_GPU_CHECK_PC, m_buttonGPU);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
 }
 
 
@@ -87,17 +94,36 @@ ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_PC, &CTab_PC::OnCbnSelchangeEncodeMethodPc)
 ON_BN_CLICKED(IDC_ENCODING_PC, &CTab_PC::OnBnClickedEncodingPc)
 END_MESSAGE_MAP()
 
-
 // CTab_PC message handlers
-
 BOOL CTab_PC::PreTranslateMessage(MSG* pMsg)
 {
-	// TODO: Add your specialized code here and/or call the base class
+	// TODO: Add your specialized code here and/or call the base class	
 	if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) return TRUE;
-
+#ifdef TEST_MODE
+	if (!m_bTest && pMsg->wParam == VK_SPACE) {
+		AutoTest();
+		return TRUE;
+	}
+#endif
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
-
+#ifdef TEST_MODE
+BOOL CTab_PC::AutoTest()
+{
+	if (!m_bPC || !m_bConfig)
+		return FALSE;
+	m_bTest = TRUE;
+	Dialog_Prompt *prompt = new Dialog_Prompt;
+	if (IDOK == prompt->DoModal()) {
+		int nRepeat = prompt->GetInputInteger();
+		for (int i = 0; i < nRepeat; i++)
+			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_PC, BN_CLICKED), 0L);
+	}
+	delete prompt;
+	m_bTest = FALSE;
+	return TRUE;
+}
+#endif
 
 int CTab_PC::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
@@ -116,7 +142,7 @@ void CTab_PC::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
-	SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE | SWP_NOREPOSITION);
+	//SetWindowPos(NULL, 0, 0, 353, 305, SWP_NOMOVE | SWP_NOREPOSITION);
 }
 
 
@@ -153,9 +179,9 @@ void CTab_PC::OnBnClickedReadConfig_PC()
 
 	oph::vec3 scale;
 
+	m_fieldLens = m_pPointCloud->getFieldLens();
 	m_pPointCloud->getScale(scale);
 	auto context = m_pPointCloud->getContext();
-	
 	m_scaleX = scale[_X];
 	m_scaleY = scale[_Y];
 	m_scaleZ = scale[_Z];
@@ -288,11 +314,8 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	context.pixel_number[_Y] = m_pixelnumY;
 	*context.wave_length = m_wavelength;
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
-
-	bool bCPU;
-	if (m_buttonGPU.GetCheck()) bCPU = FALSE;
-	else bCPU = TRUE;
-	m_pPointCloud->setMode(bCPU);
+	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());
+	m_pPointCloud->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
 	Dialog_Progress progress;
 
@@ -312,7 +335,8 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	//	progress.Progressing();
 
 	GetDlgItem(IDC_ENCODING_PC)->EnableWindow(TRUE);
-	m_buttonSaveOhc.EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_OHC_PC)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_PC)->EnableWindow(FALSE);
 
 	UpdateData(FALSE);
 }

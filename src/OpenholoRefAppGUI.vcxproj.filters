@@ -27,10 +27,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="OpenholoRefAppUI.h">
+    <ClInclude Include="OpenholoRefAppGUI.h">
       <Filter>0_MainFrame</Filter>
     </ClInclude>
-    <ClInclude Include="OpenholoRefAppUIDlg.h">
+    <ClInclude Include="OpenholoRefAppGUIDlg.h">
       <Filter>0_MainFrame</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
@@ -71,10 +71,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="OpenholoRefAppUI.cpp">
+    <ClCompile Include="OpenholoRefAppGUI.cpp">
       <Filter>0_MainFrame</Filter>
     </ClCompile>
-    <ClCompile Include="OpenholoRefAppUIDlg.cpp">
+    <ClCompile Include="OpenholoRefAppGUIDlg.cpp">
       <Filter>0_MainFrame</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -112,10 +112,10 @@
     <Image Include="res\OpenHolo_icon.ico">
       <Filter>99_etc</Filter>
     </Image>
-    <Image Include="res\OpenholoRefAppUI.ico">
+    <Image Include="res\OpenholoRefAppGUI.ico">
       <Filter>99_etc</Filter>
     </Image>
-    <Image Include="..\..\..\..\Desktop\MFC\OpenholoRefAppUI\OpenholoRefAppUI\res\OpenHolo_icon.bmp">
+    <Image Include="..\..\..\..\Desktop\MFC\OpenholoRefAppGUI\OpenholoRefAppGUI\res\OpenHolo_icon.bmp">
       <Filter>99_etc\Resource Files</Filter>
     </Image>
     <Image Include="res\OpenHolo_icon.bmp">
@@ -129,12 +129,12 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OpenholoRefAppUI.rc">
+    <ResourceCompile Include="OpenholoRefAppGUI.rc">
       <Filter>99_etc</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\OpenholoRefAppUI.rc2">
+    <None Include="res\OpenholoRefAppGUI.rc2">
       <Filter>99_etc</Filter>
     </None>
   </ItemGroup>

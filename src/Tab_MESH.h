@@ -36,7 +36,9 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeEncodeMethodMesh();
-
+#ifdef TEST_MODE
+	BOOL AutoTest();
+#endif
 	bool m_bConfig;
 	bool m_bMeshData;
 	bool m_bEncode;
@@ -47,7 +49,8 @@ public:
 
 	TCHAR		m_argParam[MAX_PATH];
 	TCHAR		m_resultPath[MAX_PATH];
-
+	
+	double m_fieldLens;
 	double m_objectsize;
 	double m_objectshiftX;
 	double m_objectshiftY;
@@ -60,4 +63,9 @@ public:
 	double m_pixelnumX;
 	double m_pixelnumY;
 	double m_wavelength;
+	CButton m_buttonGPU;
+	CButton m_buttonViewingWindow;
+#ifdef TEST_MODE
+	BOOL m_bTest;
+#endif
 };

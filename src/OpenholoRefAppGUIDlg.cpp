@@ -1,10 +1,10 @@
 
-// OpenholoRefAppUIDlg.cpp : implementation file
+// OpenholoRefAppGUIDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
-#include "OpenholoRefAppUI.h"
-#include "OpenholoRefAppUIDlg.h"
+#include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "afxdialogex.h"
 
 
@@ -57,7 +57,7 @@ END_MESSAGE_MAP()
 
 
 COpenholoRefAppDlg::COpenholoRefAppDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_OPENHOLOREFAPPUI_DIALOG, pParent)
+	: CDialogEx(IDD_OpenholoRefAppGUI_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_GEN_TAB, &COpenholoRefAppDlg::OnTcnSelchangeGenTab)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_LOG_CHECK, &COpenholoRefAppDlg::OnBnClickedLogCheck)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -337,4 +338,22 @@ void COpenholoRefAppDlg::OnBnClickedLogCheck()
 		HWND hWnd = GetConsoleWindow();
 		ShowWindowAsync(hWnd, SW_HIDE);
 	}
+}
+
+
+void COpenholoRefAppDlg::OnClose()
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	pTabPC->DestroyWindow();
+	pTabDM->DestroyWindow();
+	pTabMESH->DestroyWindow();
+	pTabWRP->DestroyWindow();
+	pTabLF->DestroyWindow();
+	delete pTabPC;
+	delete pTabDM;
+	delete pTabMESH;
+	delete pTabWRP;
+	delete pTabLF;
+
+	CDialogEx::OnClose();
 }
