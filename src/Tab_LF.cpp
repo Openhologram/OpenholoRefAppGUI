@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "Tab_LF.h"
 #include "afxdialogex.h"
 
@@ -17,6 +18,7 @@ IMPLEMENT_DYNAMIC(CTab_LF, CDialogEx)
 
 CTab_LF::CTab_LF(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_LF, pParent)
+	, m_fieldLens(0)
 	, m_distance(0)
 	, m_numimgX(0)
 	, m_numimgY(0)
@@ -210,30 +212,27 @@ void CTab_LF::OnBnClickedFindDir()
 void CTab_LF::OnBnClickedViewLf()
 {
 	// TODO: Add your control notification handler code here
-	Dialog_BMP_Viewer viewer;
-	viewer.Init(m_argParam, INIT_DIR);
-	viewer.DoModal();
-	
-	viewer.DestroyWindow();
+	TCHAR path[MAX_PATH];
+	GetModuleFileName(NULL, path, sizeof(path));
 
+	CString localPath = path;
+	int i = localPath.ReverseFind('\\');
+	localPath = localPath.Left(i);
+	localPath.Append(L"\\3D_Object_Viewer.exe");
+	_tcscpy_s(path, localPath.GetBuffer());
 
-	//TCHAR path[MAX_PATH];
-	//GetModuleFileName(NULL, path, sizeof(path));
+	TCHAR argParam[MAX_PATH * 3] = { 0 };
 
-	//CString localPath = path;
-	//int i = localPath.ReverseFind('\\');
-	//localPath = localPath.Left(i);
-	//localPath.Append(L"\\Test_3D_Object_Viewer.exe");
-	//_tcscpy_s(path, localPath.GetBuffer());
+	int mesh_flag = 2;
 
-	//TCHAR argParam[MAX_PATH * 3] = { 0 };
+	CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
 
-	//wsprintf(argParam, L"%d %s", 3, m_argParam);
+	wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
 
-	//auto a = (int)::ShellExecute(NULL, _T("open"),
-	//	path,																								//실행 파일 경로
-	//	argParam,																							//argument value 파라미터
-	//	NULL, SW_SHOW);
+	auto a = (int)::ShellExecute(NULL, _T("open"),
+		path,																								//실행 파일 경로
+		argParam,																							//argument value 파라미터
+		NULL, SW_SHOW);
 }
 
 UINT CallFuncLF(void* param)
@@ -251,6 +250,10 @@ void CTab_LF::OnBnClickedGenerate_LF()
 {
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
+	if (m_fieldLens == 0.0) {
+		AfxMessageBox(TEXT("Config value error - field lens"));
+		return;
+	}
 	if (m_distance == 0.0) {
 		AfxMessageBox(TEXT("Config value error - distance RS to Hologram"));
 		return;
@@ -334,7 +337,8 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -379,8 +383,8 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -399,23 +403,6 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pLightField->saveAsOhc(mulpath)) {
-
-		//TCHAR strExecutable[FILENAME_MAX];
-		//int result = (int)FindExecutable(widepath, NULL, (LPTSTR)&strExecutable);
-
-		//if (result == 31) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Openas",	widepath, NULL, NULL, SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-		//else if (result == 32) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Open", widepath, NULL, NULL,	SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-
-		(int)::ShellExecute(NULL, _T("open"),
-			widepath,																								//실행 파일 경로
-			NULL,																							//argument value 파라미터
-			NULL, SW_SHOW);
 	}
 }
 

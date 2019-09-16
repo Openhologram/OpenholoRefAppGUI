@@ -57,7 +57,7 @@ END_MESSAGE_MAP()
 
 
 COpenholoRefAppDlg::COpenholoRefAppDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(IDD_OpenholoRefAppGUI_DIALOG, pParent)
+	: CDialogEx(IDD_OPENHOLOREFAPPGUI_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }

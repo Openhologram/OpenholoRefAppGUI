@@ -18,8 +18,6 @@
 
 #include "GLUTviewer.h"
 
-#include <shellapi.h>
-
 IMPLEMENT_DYNAMIC(CTab_PC, CDialogEx)
 
 CTab_PC::CTab_PC(CWnd* pParent /*=NULL*/)
@@ -285,6 +283,11 @@ void CTab_PC::OnBnClickedGenerate_PC()
 {
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
+
+	if (m_fieldLens == 0.0) {
+		AfxMessageBox(TEXT("Config value error - field lens"));
+		return;
+	}
 	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
 		AfxMessageBox(TEXT("Config value error - scale"));
 		return;
@@ -380,8 +383,9 @@ void CTab_PC::OnBnClickedSaveBmp_PC()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -426,8 +430,9 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+	Time t;
 
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -446,23 +451,6 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pPointCloud->saveAsOhc(mulpath)) {
-
-		//TCHAR strExecutable[FILENAME_MAX];
-		//int result = (int)FindExecutable(widepath, NULL, (LPTSTR)&strExecutable);
-
-		//if (result == 31) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Openas",	widepath, NULL, NULL, SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-		//else if (result == 32) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Open", widepath, NULL, NULL,	SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-
-		(int)::ShellExecute(NULL, _T("open"),
-			widepath,																								//실행 파일 경로
-			NULL,																							//argument value 파라미터
-			NULL, SW_SHOW);
 	}
 }
 

@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "Tab_MESH.h"
 #include "afxdialogex.h"
 
@@ -294,6 +295,11 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 {
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
+
+	if (m_fieldLens == 0.0) {
+		AfxMessageBox(TEXT("Config value error - field lens"));
+		return;
+	}
 	if (m_objectsize == 0.0) {
 		AfxMessageBox(TEXT("Config value error - object size"));
 		return;
@@ -340,6 +346,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	progress.DestroyWindow();
 
 	GetDlgItem(IDC_SAVE_OHC_MESH)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_MESH)->EnableWindow(TRUE);
 }
 
@@ -377,7 +384,8 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -423,7 +431,8 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

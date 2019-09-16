@@ -25,6 +25,9 @@
     <Filter Include="2_Dialog">
       <UniqueIdentifier>{e5c47a9d-cab5-4921-908f-1b70a4df27ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3_Util">
+      <UniqueIdentifier>{b1307990-8c7a-4f85-857b-096c30f97a65}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OpenholoRefAppGUI.h">
@@ -69,6 +72,9 @@
     <ClInclude Include="Dialog_Prompt.h">
       <Filter>2_Dialog</Filter>
     </ClInclude>
+    <ClInclude Include="Time.h">
+      <Filter>3_Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenholoRefAppGUI.cpp">
@@ -106,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="Dialog_Prompt.cpp">
       <Filter>2_Dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="Time.cpp">
+      <Filter>3_Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

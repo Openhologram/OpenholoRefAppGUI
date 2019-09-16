@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "Tab_WRP.h"
 #include "afxdialogex.h"
 
@@ -291,6 +292,11 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 {
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
+
+	if (m_fieldLens == 0.0) {
+		AfxMessageBox(TEXT("Config value error - field lens"));
+		return;
+	}
 	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
 		AfxMessageBox(TEXT("Config value error - scale"));
 		return;
@@ -379,8 +385,8 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -423,8 +429,8 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -444,22 +450,6 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pWRP->saveAsOhc(mulpath)) {
 
-		//TCHAR strExecutable[FILENAME_MAX];
-		//int result = (int)FindExecutable(widepath, NULL, (LPTSTR)&strExecutable);
-
-		//if (result == 31) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Openas",	widepath, NULL, NULL, SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-		//else if (result == 32) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Open", widepath, NULL, NULL,	SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-
-		(int)::ShellExecute(NULL, _T("open"),
-			widepath,																								//실행 파일 경로
-			NULL,																							//argument value 파라미터
-			NULL, SW_SHOW);
 	}
 }
 

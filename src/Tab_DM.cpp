@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "OpenholoRefAppGUI.h"
+#include "OpenholoRefAppGUIDlg.h"
 #include "Tab_DM.h"
 #include "afxdialogex.h"
 
@@ -461,8 +462,8 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -505,8 +506,8 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-
-	CFileDialog FileDialog(FALSE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	Time t;
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -525,23 +526,6 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pDepthMap->saveAsOhc(mulpath)) {
-
-		//TCHAR strExecutable[FILENAME_MAX];
-		//int result = (int)FindExecutable(widepath, NULL, (LPTSTR)&strExecutable);
-
-		//if (result == 31) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Openas",	widepath, NULL, NULL, SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-		//else if (result == 32) {
-		//	SHELLEXECUTEINFO sei = { sizeof(sei), 0, m_hWnd, L"Open", widepath, NULL, NULL,	SW_SHOWNORMAL, AfxGetApp()->m_hInstance };
-		//	ShellExecuteEx(&sei);
-		//}
-
-		(int)::ShellExecute(NULL, _T("open"),
-			widepath,																								//실행 파일 경로
-			NULL,																							//argument value 파라미터
-			NULL, SW_SHOW);
 	}
 }
 

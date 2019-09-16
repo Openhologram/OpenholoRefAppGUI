@@ -5,7 +5,7 @@
 #pragma once
 #include "afxcmn.h"
 #include "afxwin.h"
-
+#include "Time.h"
 class CTab_PC;
 class CTab_DM;
 class CTab_LF;
