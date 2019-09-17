@@ -432,7 +432,7 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 	Time t;
 
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

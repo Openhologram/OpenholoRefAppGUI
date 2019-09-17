@@ -124,7 +124,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(SolutionDir)Reference\lib\;$(ProjectDir)freeglut_3.0.0\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>openholo.lib;ophgen.lib;freeglut.lib</AdditionalDependencies>
+      <AdditionalDependencies>openholo_d.lib;ophgen_d.lib;freeglut.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -216,6 +216,7 @@
     <ClInclude Include="Tab_PC.h" />
     <ClInclude Include="Tab_WRP.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Time.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dialog_BMP_Viewer.cpp" />
@@ -235,6 +236,7 @@
     <ClCompile Include="Tab_MESH.cpp" />
     <ClCompile Include="Tab_PC.cpp" />
     <ClCompile Include="Tab_WRP.cpp" />
+    <ClCompile Include="Time.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenholoRefAppGUI.rc" />
