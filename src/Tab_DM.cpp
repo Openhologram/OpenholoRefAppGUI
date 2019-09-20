@@ -348,12 +348,10 @@ void CTab_DM::OnBnClickedViewDm()
 
 UINT CallFuncDM(void* param)
 {
-	((ophDepthMap*)((parammeter*)param)->pGEN)->generateHologram();
-
-	*((parammeter*)param)->pFinish = TRUE;
-	((parammeter*)param)->pDialog->m_bFinished = TRUE;
-	//::SendMessage(((parammeter*)param)->pDialog->GetSafeHwnd(), WM_CLOSE, NULL, NULL);
-	delete param;
+	parammeter *pParam = (parammeter *)param;
+	((ophDepthMap*)pParam->pGEN)->generateHologram();
+	pParam->pDialog->m_bFinished = TRUE;
+	delete pParam;
 
 	return 1;
 }
@@ -383,7 +381,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 		AfxMessageBox(TEXT("Config value error - wave length"));
 		return;
 	}
-
 	auto context = m_pDepthMap->getContext();
 	auto config = m_pDepthMap->getConfig();
 
@@ -410,7 +407,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pDepthMap;
 	pParam->pDialog = &progress;
-	pParam->pFinish = &bIsFinish;
 
 	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
 	progress.DoModal();

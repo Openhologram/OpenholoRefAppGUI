@@ -44,16 +44,20 @@ UINT CallFunction(LPVOID lParam) {
 	Dialog_Progress *dlg = (Dialog_Progress*)lParam;
 
 	if (!dlg) return 0;
-
+	CString szMsg = L"HOLOGRAM GENERATING";
 	while (!dlg->m_bFinished) {
 		dlg->m_iProgress++;
-		if (dlg->m_iProgress == 1) { dlg->SetDlgItemText(IDC_TEXT_GEN, CString(L"\t\tHOLOGRAM GENERATING")); Sleep(500); }
-		else if (dlg->m_iProgress == 2) { dlg->SetDlgItemText(IDC_TEXT_GEN, CString(L"\t\tHOLOGRAM GENERATING.")); Sleep(500); }
-		else if (dlg->m_iProgress == 3) { dlg->SetDlgItemText(IDC_TEXT_GEN, CString(L"\t\tHOLOGRAM GENERATING..")); Sleep(500); }
-		else if (dlg->m_iProgress == 4) { dlg->SetDlgItemText(IDC_TEXT_GEN, CString(L"\t\tHOLOGRAM GENERATING...")); Sleep(500); }
-		else if (dlg->m_iProgress >= 5) { dlg->SetDlgItemText(IDC_TEXT_GEN, CString(L"\t\tHOLOGRAM GENERATING....")); dlg->m_iProgress = 0; Sleep(500); }
+		if (dlg->m_iProgress <= 5) {
+			szMsg.AppendChar('.');
+			dlg->SetDlgItemTextW(IDC_TEXT_GEN, szMsg);
+		}
+		else {
+			szMsg = L"HOLOGRAM GENERATING";
+			dlg->m_iProgress = 0;
+		}
+		Sleep(500);
 	}
-	//dlg->UpdateData(FALSE);
+
 	::SendMessage(dlg->GetSafeHwnd(), WM_CLOSE, NULL, NULL);
 
 	return 1;

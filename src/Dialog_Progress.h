@@ -37,6 +37,5 @@ public:
 struct parammeter {
 	void* pGEN;
 	UINT flag;
-	BOOL* pFinish;
 	Dialog_Progress* pDialog;
 };

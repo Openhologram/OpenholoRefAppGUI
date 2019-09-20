@@ -237,18 +237,17 @@ void CTab_LF::OnBnClickedViewLf()
 
 UINT CallFuncLF(void* param)
 {
-	((ophLF*)((parammeter*)param)->pGEN)->generateHologram();
-
-	*((parammeter*)param)->pFinish = TRUE;
-	((parammeter*)param)->pDialog->m_bFinished = TRUE;
-	delete param;
+	parammeter *pParam = (parammeter *)param;
+	((ophLF*)pParam->pGEN)->generateHologram();
+	pParam->pDialog->m_bFinished = TRUE;
+	delete pParam;
 
 	return 1;
 }
 
 void CTab_LF::OnBnClickedGenerate_LF()
 {
-	// TODO: Add your control notification handler code here
+	// TODO: Add your control notification handler code here	
 	UpdateData(TRUE);
 	if (m_fieldLens == 0.0) {
 		AfxMessageBox(TEXT("Config value error - field lens"));
@@ -274,7 +273,6 @@ void CTab_LF::OnBnClickedGenerate_LF()
 		AfxMessageBox(TEXT("Config value error - wave length"));
 		return;
 	}
-
 	m_pLightField->setDistRS2Holo(m_distance);
 	m_pLightField->setNumImage(m_numimgX, m_numimgY);
 	m_pLightField->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
@@ -290,7 +288,6 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pLightField;
 	pParam->pDialog = &progress;
-	pParam->pFinish = &bIsFinish;
 
 	CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
 	progress.DoModal();

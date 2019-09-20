@@ -269,12 +269,11 @@ void CTab_PC::OnBnClickedViewPc()
 
 UINT CallFunc(void* param)
 {
-	((ophPointCloud*)((parammeter*)param)->pGEN)->generateHologram(((parammeter*)param)->flag);
+	parammeter *pParam = (parammeter *)param;
+	((ophPointCloud *)pParam->pGEN)->generateHologram(pParam->flag);
+	pParam->pDialog->m_bFinished = TRUE;
 
-	*((parammeter*)param)->pFinish = TRUE;
-	((parammeter*)param)->pDialog->m_bFinished = TRUE;
-	//::SendMessage(((parammeter*)param)->pDialog->GetSafeHwnd(), WM_CLOSE, NULL, NULL);
-	delete param;
+	delete pParam;
 
 	return 1;
 }
@@ -325,23 +324,17 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pPointCloud;
 	pParam->flag = m_idxDiff;
-	pParam->pFinish = &m_bFinish;
 	pParam->pDialog = &progress;
 
 	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
-
-	//progress.GetDlgItem(IDC_TEXT_GEN);
-
-	//while (!m_bFinish)
-	//	progress.Progressing();
-
+	
 	GetDlgItem(IDC_ENCODING_PC)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_OHC_PC)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_BMP_PC)->EnableWindow(FALSE);
 
-	UpdateData(FALSE);
+	//UpdateData(FALSE);
 }
 
 

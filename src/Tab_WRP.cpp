@@ -277,13 +277,12 @@ void CTab_WRP::OnBnClickedViewWrp()
 
 UINT CallFuncWRP(void* param)
 {
-	((ophWRP*)((parammeter*)param)->pGEN)->autoScaling();
-	((ophWRP*)((parammeter*)param)->pGEN)->calculateWRP();
-	((ophWRP*)((parammeter*)param)->pGEN)->generateHologram();
-	
-	*((parammeter*)param)->pFinish = TRUE;
-	((parammeter*)param)->pDialog->m_bFinished = TRUE;
-	delete param;
+	parammeter *pParam = (parammeter *)param;
+	((ophWRP*)pParam->pGEN)->autoScaling();
+	((ophWRP*)pParam->pGEN)->calculateWRP();
+	((ophWRP*)pParam->pGEN)->generateHologram();
+	pParam->pDialog->m_bFinished = TRUE;
+	delete pParam;
 
 	return 1;
 }
@@ -338,7 +337,6 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pWRP;
 	pParam->pDialog = &progress;
-	pParam->pFinish = &bIsFinish;
 
 	CWinThread* pThread = AfxBeginThread(CallFuncWRP, pParam);
 	progress.DoModal();

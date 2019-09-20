@@ -280,13 +280,11 @@ void CTab_MESH::OnBnClickedViewMesh()
 
 UINT CallFuncMESH(void* param)
 {
-	((ophTri*)((parammeter*)param)->pGEN)->objScaleShift();
-
-	((ophTri*)((parammeter*)param)->pGEN)->generateMeshHologram(((ophTri*)((parammeter*)param)->pGEN)->SHADING_FLAT);
-
-	*((parammeter*)param)->pFinish = TRUE;
-	((parammeter*)param)->pDialog->m_bFinished = TRUE;
-	delete param;
+	parammeter *pParam = (parammeter *)param;	
+	((ophTri*)pParam->pGEN)->objScaleShift();
+	((ophTri*)pParam->pGEN)->generateMeshHologram(((ophTri*)pParam->pGEN)->SHADING_FLAT);
+	pParam->pDialog->m_bFinished = TRUE;
+	delete pParam;
 
 	return 1;
 }
@@ -339,7 +337,6 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pMesh;
 	pParam->pDialog = &progress;
-	pParam->pFinish = &bIsFinish;
 
 	CWinThread* pThread = AfxBeginThread(CallFuncMESH, pParam);
 	progress.DoModal();
