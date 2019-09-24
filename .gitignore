@@ -24,9 +24,19 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
 *.out
 *.app
+*.ipch
+*.tlog
+*.db
+*.opendb
+*.exp
+*.idb
+src/x64/Debug/OpenholoRefAppGUI.res
+src/x64/Release/OpenholoRefAppGUI.res
+x64/Release/OpenholoRefAppGUI.iobj
+src/x64/Debug/RCa04604
+x64/Release/OpenholoRefAppGUI.ipdb
