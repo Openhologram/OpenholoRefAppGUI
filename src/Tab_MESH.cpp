@@ -328,7 +328,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 
 	//*context.wave_length = m_wavelength;
 
-	//m_pMesh->setMode(!m_buttonGPU.GetCheck());
+	m_pMesh->setMode(!m_buttonGPU.GetCheck());
 	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());
 	Dialog_Progress progress;
 
