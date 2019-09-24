@@ -419,22 +419,6 @@ struct GEN_DLL OphMeshData {
 	Real* color;
 };
 
-struct GEN_DLL OphPlyData {
-	ulonglong n_faces;
-	ulonglong n_points;
-	int n_colors;
-	uint *face;
-	Real *vertex;
-	Real *color;
-	Real *phase;
-	bool isPhaseParse;
-
-	OphPlyData() :vertex(nullptr), face(nullptr), color(nullptr), 
-		phase(nullptr) {
-		n_points = 0; n_faces = 0; n_colors = 0; isPhaseParse = false;
-	}
-};
-
 struct GEN_DLL OphWRPConfig {
 	Real field_lens;
 	oph::vec3 scale;								///< Scaling factor of coordinate of point cloud

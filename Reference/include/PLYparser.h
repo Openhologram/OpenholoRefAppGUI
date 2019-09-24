@@ -173,15 +173,6 @@ public:
 		uint* face_idx,
 		Real* vertexArray,
 		Real* colorArray);
-
-	bool loadPLY(
-		const char* fileName,
-		ulonglong &n_vertices,
-		int &color_channels,
-		uint** face_idx,
-		Real** vertexArray,
-		Real** faceArray,
-		Real** colorArray);
 };
 
 
