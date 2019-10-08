@@ -39,24 +39,32 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnClose();
+	afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnBnClickedLogCheck();
 	DECLARE_MESSAGE_MAP()
 
 	void initTabs(void);
 
 public:
-	afx_msg void OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
-	afx_msg void OnBnClickedLogCheck();
-
+	BOOL IsGeforceGPU();
 
 	CImage		m_imgOPH_LOGO, m_imgKETI_LOGO;
+	CRect		m_rcOPH;
+	BOOL		m_bClickOPH;
 
 	CStatic m_picOphLogo;
+	CStatic m_picKetiLogo;
 
 	CTabCtrl	m_Tab;
-
+	IStream		*pStreamOph;
+	IStream		*pStreamKeti;
 
 	CTab_PC		*pTabPC;
 	CTab_DM		*pTabDM;
@@ -64,5 +72,4 @@ public:
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
 	CButton		m_buttonLog;
-	afx_msg void OnClose();
 };

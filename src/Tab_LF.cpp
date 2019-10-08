@@ -281,6 +281,11 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	m_pLightField->setMode(!m_buttonGPU.GetCheck());
 	m_pLightField->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
+
+	GetDlgItem(IDC_SAVE_OHC_LF)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_LF)->EnableWindow(FALSE);
+	GetDlgItem(IDC_ENCODING_LF)->EnableWindow(TRUE);
+
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;
@@ -292,11 +297,6 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
-
-	//m_pLightField->generateHologram();
-	GetDlgItem(IDC_SAVE_OHC_LF)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_LF)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_LF)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
@@ -334,8 +334,8 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -380,8 +380,8 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -418,6 +418,10 @@ BOOL CTab_LF::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Off-SSB");
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->SetCurSel(m_idxEncode);
+
+	// GeForce GPU 일 때만, 활성화
+	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
+	((CButton*)GetDlgItem(IDC_GPU_CHECK_LF))->EnableWindow(pDlg->IsGeforceGPU());
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

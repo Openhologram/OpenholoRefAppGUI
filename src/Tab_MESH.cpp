@@ -315,21 +315,27 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 		return;
 	}
 
-	//auto context = m_pMesh->getContext();
-	//m_pMesh->setObjSize(m_objectsize);
-	//m_pMesh->setObjShift(vec3(m_objectshiftX, m_objectshiftY, m_objectshiftZ));
-	//m_pMesh->setIllumination(vec3(m_lampdirX, m_lampdirY, m_lampdirZ));
+	auto context = m_pMesh->getContext();
+	m_pMesh->setObjSize(m_objectsize);
+	m_pMesh->setObjShift(vec3(m_objectshiftX, m_objectshiftY, m_objectshiftZ));
+	m_pMesh->setIllumination(vec3(m_lampdirX, m_lampdirY, m_lampdirZ));
 
-	//context.pixel_pitch[_X] = m_pixelpitchX;
-	//context.pixel_pitch[_Y] = m_pixelpitchY;
+	context.pixel_pitch[_X] = m_pixelpitchX;
+	context.pixel_pitch[_Y] = m_pixelpitchY;
 
-	//context.pixel_number[_X] = m_pixelnumX;
-	//context.pixel_number[_Y] = m_pixelnumY;
+	context.pixel_number[_X] = m_pixelnumX;
+	context.pixel_number[_Y] = m_pixelnumY;
 
-	//*context.wave_length = m_wavelength;
+	*context.wave_length = m_wavelength;
 
 	//m_pMesh->setMode(!m_buttonGPU.GetCheck());
 	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());
+
+
+	GetDlgItem(IDC_SAVE_OHC_MESH)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(FALSE);
+	GetDlgItem(IDC_ENCODING_MESH)->EnableWindow(TRUE);
+
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;
@@ -342,9 +348,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	GetDlgItem(IDC_SAVE_OHC_MESH)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_MESH)->EnableWindow(TRUE);
+	UpdateData(FALSE);
 }
 
 
@@ -381,8 +385,8 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -428,8 +432,8 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

@@ -6,7 +6,7 @@
 #include "OpenholoRefAppGUI.h"
 #include "OpenholoRefAppGUIDlg.h"
 #include "afxdialogex.h"
-
+#include <d3d9.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -56,10 +56,33 @@ END_MESSAGE_MAP()
 
 
 
+BOOL COpenholoRefAppDlg::IsGeforceGPU()
+{
+	D3DADAPTER_IDENTIFIER9 id;
+	IDirect3D9 *iDirect3D = NULL;
+	iDirect3D = Direct3DCreate9(D3D_SDK_VERSION);
+
+	if (iDirect3D) {
+		iDirect3D->GetAdapterIdentifier(D3DADAPTER_DEFAULT, 0, &id);
+		CStringA szTmp(id.Description);
+		iDirect3D->Release();
+
+		if (szTmp.Find("NVIDIA") >= 0) {
+			if(szTmp.Find("GeForce") >= 0)
+				return true;
+			
+		}
+		else
+			return false;
+	}
+	return false;
+}
+
 COpenholoRefAppDlg::COpenholoRefAppDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_OPENHOLOREFAPPGUI_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bClickOPH = FALSE;
 }
 
 void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
@@ -68,6 +91,7 @@ void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_GEN_TAB, m_Tab);
 	DDX_Control(pDX, IDC_OPH_LOGO, m_picOphLogo);
 	DDX_Control(pDX, IDC_LOG_CHECK, m_buttonLog);
+	DDX_Control(pDX, IDC_KETI_LOGO, m_picKetiLogo);
 }
 
 BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
@@ -78,6 +102,9 @@ BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_LOG_CHECK, &COpenholoRefAppDlg::OnBnClickedLogCheck)
 	ON_WM_CLOSE()
+	ON_WM_SETCURSOR()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
 
@@ -88,6 +115,9 @@ BOOL COpenholoRefAppDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: Add your specialized code here and/or call the base class
 	if (pMsg->wParam == VK_ESCAPE || pMsg->wParam == VK_RETURN) return TRUE;
+	//if (pMsg->message == WM_MOUSEHOVER && pMsg->hwnd == m_picOphLogo.m_hWnd) {
+	//	AfxGetApp()->LoadCursorW(IDC_HAND);		
+	//}
 
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
@@ -126,13 +156,13 @@ BOOL COpenholoRefAppDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	CheckDlgButton(IDC_LOG_CHECK, TRUE);
 
+	
 	m_imgOPH_LOGO.Load(_T("res/OpenHolo_logo.png"));
 	m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
 	GetDlgItem(IDC_OPH_LOGO)->SetWindowPos(NULL, 0, 0, m_imgOPH_LOGO.GetWidth(), m_imgOPH_LOGO.GetHeight(), SWP_NOMOVE);
-	//GetDlgItem(IDC_KETI_LOGO)->SetWindowPos(NULL, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight(), SWP_NOMOVE);
+	GetDlgItem(IDC_KETI_LOGO)->SetWindowPos(NULL, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight(), SWP_NOMOVE);
 
 	initTabs();
-
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -181,17 +211,19 @@ void COpenholoRefAppDlg::OnPaint()
 		CRect rect;
 		staticSize->GetClientRect(rect);
 		m_imgOPH_LOGO.Destroy();
+
+		//m_imgOPH_LOGO.LoadFromResource(AfxGetApp()->m_hInstance, IDB_OPENHOLO_LOGO);
 		m_imgOPH_LOGO.Load(_T("res/OpenHolo_logo.png"));
 		m_imgOPH_LOGO.Draw(dc->m_hDC, 0, 0, m_imgOPH_LOGO.GetWidth(), m_imgOPH_LOGO.GetHeight());
 
 
-		//pWnd = (CWnd*)GetDlgItem(IDC_KETI_LOGO);
-		//dc = pWnd->GetDC();
-		//staticSize = (CStatic *)GetDlgItem(IDC_KETI_LOGO);
-		//staticSize->GetClientRect(rect);
-		//m_imgKETI_LOGO.Destroy();
-		//m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
-		//m_imgKETI_LOGO.Draw(dc->m_hDC, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight());
+		pWnd = (CWnd*)GetDlgItem(IDC_KETI_LOGO);
+		dc = pWnd->GetDC();
+		staticSize = (CStatic *)GetDlgItem(IDC_KETI_LOGO);
+		staticSize->GetClientRect(rect);
+		m_imgKETI_LOGO.Destroy();
+		m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
+		m_imgKETI_LOGO.Draw(dc->m_hDC, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight());
 	}
 }
 
@@ -295,7 +327,7 @@ void COpenholoRefAppDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
-	SetWindowPos(NULL, 0, 0, 420, 480, SWP_NOMOVE);
+	//SetWindowPos(NULL, 0, 0, 420, 480, SWP_NOMOVE);
 
 	// TODO: Add your message handler code here
 }
@@ -330,14 +362,7 @@ char * COpenholoRefAppDlg::GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd)
 void COpenholoRefAppDlg::OnBnClickedLogCheck()
 {
 	// TODO: Add your control notification handler code here
-	if (m_buttonLog.GetCheck()) {
-		HWND hWnd = GetConsoleWindow();
-		ShowWindowAsync(hWnd, SW_SHOW);
-	}
-	else {
-		HWND hWnd = GetConsoleWindow();
-		ShowWindowAsync(hWnd, SW_HIDE);
-	}
+	ShowWindowAsync(GetConsoleWindow(), m_buttonLog.GetCheck() ? SW_SHOW : SW_HIDE);
 }
 
 
@@ -356,4 +381,46 @@ void COpenholoRefAppDlg::OnClose()
 	delete pTabLF;
 
 	CDialogEx::OnClose();
+}
+
+BOOL COpenholoRefAppDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	CPoint pt;
+	GetCursorPos(&pt);
+	m_picOphLogo.GetWindowRect(m_rcOPH);
+
+	if (m_rcOPH.PtInRect(pt)) {
+		SetCursor(AfxGetApp()->LoadStandardCursor(MAKEINTRESOURCE(IDC_HAND)));
+		return TRUE;
+	}
+
+	return CDialogEx::OnSetCursor(pWnd, nHitTest, message);
+}
+
+
+void COpenholoRefAppDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	ScreenToClient(&m_rcOPH);
+	if (!m_bClickOPH && m_rcOPH.PtInRect(point)) {
+		m_bClickOPH = TRUE;
+		m_picOphLogo.GetWindowRect(m_rcOPH);
+		return;
+	}
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+
+void COpenholoRefAppDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	ScreenToClient(&m_rcOPH);
+	if (m_bClickOPH && m_rcOPH.PtInRect(point)) {
+		ShellExecute(NULL, L"open", L"http://openholo.org/", NULL, NULL, SW_SHOWNORMAL);
+		m_bClickOPH = FALSE;
+		m_picOphLogo.GetWindowRect(m_rcOPH);
+		return;
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
 }

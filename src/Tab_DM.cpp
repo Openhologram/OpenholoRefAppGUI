@@ -391,7 +391,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
 	config.far_depthmap = m_farDepth;
 	config.near_depthmap = m_nearDepth;
-	config.field_lens = m_fieldLens;
+	config.fieldLength = m_fieldLens;
 	config.FLAG_CHANGE_DEPTH_QUANTIZATION = 1;
 	config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
 	config.num_of_depth = m_numDepth;
@@ -399,6 +399,10 @@ void CTab_DM::OnBnClickedGenerate_DM()
 
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
+	
+	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
+	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(TRUE);
 
 	Dialog_Progress progress;
 
@@ -411,11 +415,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
-
-	//m_pDepthMap->generateHologram();
-	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
@@ -458,8 +457,7 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -502,8 +500,8 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -541,6 +539,10 @@ BOOL CTab_DM::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Off-SSB");
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->SetCurSel(m_idxEncode);
+
+	// GeForce GPU 일 때만, 활성화
+	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
+	((CButton*)GetDlgItem(IDC_GPU_CHECK_DM))->EnableWindow(pDlg->IsGeforceGPU());
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

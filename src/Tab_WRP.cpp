@@ -330,6 +330,10 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	m_pWRP->setLocation(m_locationWRP);
 	m_pWRP->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
+	GetDlgItem(IDC_SAVE_BMP_WRP)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SAVE_OHC_WRP)->EnableWindow(TRUE);
+	GetDlgItem(IDC_ENCODING_WRP)->EnableWindow(TRUE);
+
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;
@@ -341,10 +345,6 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	CWinThread* pThread = AfxBeginThread(CallFuncWRP, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
-
-	GetDlgItem(IDC_SAVE_BMP_WRP)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SAVE_OHC_WRP)->EnableWindow(TRUE);
-	GetDlgItem(IDC_ENCODING_WRP)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
@@ -383,8 +383,8 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -427,8 +427,8 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-	Time t;
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -466,6 +466,10 @@ BOOL CTab_WRP::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_WRP))->AddString(L"Off-SSB");
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_WRP))->SetCurSel(m_idxEncode);
+
+	// GeForce GPU 일 때만, 활성화
+	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
+	((CButton*)GetDlgItem(IDC_GPU_CHECK_WRP))->EnableWindow(pDlg->IsGeforceGPU());
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE

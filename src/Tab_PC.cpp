@@ -273,6 +273,9 @@ UINT CallFunc(void* param)
 	((ophPointCloud *)pParam->pGEN)->generateHologram(pParam->flag);
 	pParam->pDialog->m_bFinished = TRUE;
 
+	Complex<Real> **p = ((ophPointCloud *)pParam->pGEN)->getComplexField();
+	printf("=> Complex Field[0] = %lf / %lf\n", (*p)[0][_RE], (*p)[0][_IM]);
+
 	delete pParam;
 
 	return 1;
@@ -315,9 +318,14 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	context.pixel_number[_X] = m_pixelnumX;
 	context.pixel_number[_Y] = m_pixelnumY;
 	*context.wave_length = m_wavelength;
+	m_pPointCloud->setResolution(context.pixel_number);
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
 	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());
 	m_pPointCloud->setViewingWindow(m_buttonViewingWindow.GetCheck());
+	
+	GetDlgItem(IDC_ENCODING_PC)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_OHC_PC)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SAVE_BMP_PC)->EnableWindow(FALSE);
 
 	Dialog_Progress progress;
 
@@ -329,12 +337,8 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
-	
-	GetDlgItem(IDC_ENCODING_PC)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_OHC_PC)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_PC)->EnableWindow(FALSE);
 
-	//UpdateData(FALSE);
+	UpdateData(FALSE);
 }
 
 
@@ -347,7 +351,7 @@ void CTab_PC::OnBnClickedEncodingPc()
 	}
 	else */{
 		auto depth = m_pPointCloud->getOffsetDepth();
-		m_pPointCloud->waveCarry(0, 2, depth);
+		//m_pPointCloud->waveCarry(0, 2, depth);
 		switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
 		case ophGen::ENCODE_PHASE:
 		case ophGen::ENCODE_AMPLITUDE:
@@ -376,9 +380,8 @@ void CTab_PC::OnBnClickedSaveBmp_PC()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	Time t;
 	
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -423,9 +426,9 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-	Time t;
+	
 
-	CFileDialog FileDialog(FALSE, NULL, t.GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -467,6 +470,10 @@ BOOL CTab_PC::OnInitDialog()
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->SetCurSel(m_idxEncode);
 
+	// GeForce GPU 일 때만, 활성화
+	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
+	((CButton*)GetDlgItem(IDC_GPU_CHECK_PC))->EnableWindow(pDlg->IsGeforceGPU());
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
