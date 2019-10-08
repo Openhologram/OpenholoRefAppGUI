@@ -146,7 +146,7 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "xml") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -160,7 +160,7 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 	if (strcmp(mulpath, "") == 0) return;
 
 	if (!m_pLightField->readLFConfig(mulpath)) {
-		AfxMessageBox(TEXT("it is not xml config file for LightField."));
+		AfxMessageBox(L"it is not xml config file for LightField.");
 		return;
 	}
 
@@ -184,22 +184,22 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 void CTab_LF::OnBnClickedFindDir()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR szSelPath[MAX_PATH] = { 0 };
+	TCHAR szSelPath[MAX_PATH] = { 0, };
 	TCHAR szCurPath[MAX_PATH] = { 0, };
 	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CFolderPickerDialog dlg(szCurPath, OFN_FILEMUSTEXIST, NULL, 0);
+	CFolderPickerDialog dlg(NULL, OFN_FILEMUSTEXIST, NULL, 0);
 	if (dlg.DoModal() == IDOK) {
 		wsprintf(szSelPath, L"%s", dlg.GetPathName());
 	}
 	else
 		return;
 
-	SetCurrentDirectory(szSelPath);
+	SetCurrentDirectory(szCurPath);
 	CStringA szPath = CW2A(szSelPath);
 	if (szPath.IsEmpty()) return;
 	if (m_pLightField->loadLF(szPath, "bmp") == -1) {
-		AfxMessageBox(_TEXT("Load LF image failed"));
+		AfxMessageBox(L"Load LF image failed");
 		return;
 	}
 
@@ -221,18 +221,25 @@ void CTab_LF::OnBnClickedViewLf()
 	localPath.Append(L"\\3D_Object_Viewer.exe");
 	_tcscpy_s(path, localPath.GetBuffer());
 
-	TCHAR argParam[MAX_PATH * 3] = { 0 };
+	CFileFind ff;
+	if (ff.FindFile(localPath)) {
+		TCHAR argParam[MAX_PATH * 3] = { 0 };
 
-	int mesh_flag = 2;
+		int mesh_flag = 2;
 
-	CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
+		CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
 
-	wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
+		wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
 
-	auto a = (int)::ShellExecute(NULL, _T("open"),
-		path,																								//실행 파일 경로
-		argParam,																							//argument value 파라미터
-		NULL, SW_SHOW);
+		auto a = (int)::ShellExecute(NULL, _T("open"),
+			path,																								//실행 파일 경로
+			argParam,																							//argument value 파라미터
+			NULL, SW_SHOW);
+	}
+	else {
+		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
+	}
+
 }
 
 UINT CallFuncLF(void* param)
@@ -249,28 +256,28 @@ void CTab_LF::OnBnClickedGenerate_LF()
 {
 	// TODO: Add your control notification handler code here	
 	UpdateData(TRUE);
-	if (m_fieldLens == 0.0) {
-		AfxMessageBox(TEXT("Config value error - field lens"));
+	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
+		AfxMessageBox(L"Config value error - field lens");
 		return;
 	}
 	if (m_distance == 0.0) {
-		AfxMessageBox(TEXT("Config value error - distance RS to Hologram"));
+		AfxMessageBox(L"Config value error - distance RS to Hologram");
 		return;
 	}
 	if (m_numimgX == 0 || m_numimgY == 0) {
-		AfxMessageBox(TEXT("Config value error - number of images of LF"));
+		AfxMessageBox(L"Config value error - number of images of LF");
 		return;
 	}
 	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(TEXT("Config value error - pixel pitch"));
+		AfxMessageBox(L"Config value error - pixel pitch");
 		return;
 	}
 	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(TEXT("Config value error - pixel number"));
+		AfxMessageBox(L"Config value error - pixel number");
 		return;
 	}
 	if (m_wavelength == 0.0) {
-		AfxMessageBox(TEXT("Config value error - wave length"));
+		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
 	m_pLightField->setDistRS2Holo(m_distance);
@@ -340,7 +347,7 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
 	}
 
@@ -386,7 +393,7 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ohc") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
 	}
 

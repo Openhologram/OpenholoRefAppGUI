@@ -69,6 +69,7 @@ void Dialog_BMP_Viewer::Init(CString pDirectoryPath, INIT_FLAG flag)
 		m_image.push_back(pImage);
 		CString token = pDirectoryPath.Right(pDirectoryPath.GetLength() - pDirectoryPath.ReverseFind('\\') - 1);
 		m_imageName.push_back(token);
+		
 	}
 		break;
 	}

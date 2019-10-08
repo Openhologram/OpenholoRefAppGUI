@@ -154,7 +154,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "xml") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -168,7 +168,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	if (strcmp(mulpath, "") == 0) return;
 
 	if (!m_pMesh->readMeshConfig(mulpath)) {
-		AfxMessageBox(TEXT("it is not xml config file for Triangle Mesh."));
+		AfxMessageBox(L"it is not xml config file for Triangle Mesh.");
 		return;
 	}
 
@@ -224,7 +224,7 @@ void CTab_MESH::OnBnClickedLoadMesh()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ply") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ply")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -240,7 +240,7 @@ void CTab_MESH::OnBnClickedLoadMesh()
 
 	if (!m_pMesh->loadMeshData(mulpath, "ply"))
 	{
-		AfxMessageBox(TEXT("it is not ply file for Mesh Data."));
+		AfxMessageBox(L"it is not ply file for Mesh Data.");
 		return;
 	}
 
@@ -264,18 +264,24 @@ void CTab_MESH::OnBnClickedViewMesh()
 	localPath.Append(L"\\3D_Object_Viewer.exe");
 	_tcscpy_s(path, localPath.GetBuffer());
 
-	TCHAR argParam[MAX_PATH * 3] = { 0 };
-	
-	int mesh_flag = 2;
+	CFileFind ff;
+	if (ff.FindFile(localPath)) {
+		TCHAR argParam[MAX_PATH * 3] = { 0 };
 
-	CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
+		int mesh_flag = 2;
 
-	wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
+		CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
 
-	auto a = (int)::ShellExecute(NULL, _T("open"),
-		path,																								//실행 파일 경로
-		argParam,																							//argument value 파라미터
-		NULL, SW_SHOW);
+		wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
+
+		auto a = (int)::ShellExecute(NULL, _T("open"),
+			path,																								//실행 파일 경로
+			argParam,																							//argument value 파라미터
+			NULL, SW_SHOW);
+	}
+	else {
+		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
+	}
 }
 
 UINT CallFuncMESH(void* param)
@@ -294,24 +300,24 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
 
-	if (m_fieldLens == 0.0) {
-		AfxMessageBox(TEXT("Config value error - field lens"));
+	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
+		AfxMessageBox(L"Config value error - field lens");
 		return;
 	}
 	if (m_objectsize == 0.0) {
-		AfxMessageBox(TEXT("Config value error - object size"));
+		AfxMessageBox(L"Config value error - object size");
 		return;
 	}
 	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(TEXT("Config value error - pixel pitch"));
+		AfxMessageBox(L"Config value error - pixel pitch");
 		return;
 	}
 	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(TEXT("Config value error - pixel number"));
+		AfxMessageBox(L"Config value error - pixel number");
 		return;
 	}
 	if (m_wavelength == 0.0) {
-		AfxMessageBox(TEXT("Config value error - wave length"));
+		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
 
@@ -391,7 +397,7 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
 	}
 
@@ -432,13 +438,12 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 
-	
 	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ohc") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
 	}
 

@@ -165,7 +165,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "xml") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -179,7 +179,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 	if (strcmp(mulpath, "") == 0) return;
 
 	if (!m_pWRP->readConfig(mulpath)) {
-		AfxMessageBox(TEXT("it is not xml config file for WRP."));
+		AfxMessageBox(L"it is not xml config file for WRP.");
 		return;
 	}
 
@@ -220,7 +220,7 @@ void CTab_WRP::OnBnClickedLoadPcWrp()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ply") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ply")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -236,7 +236,7 @@ void CTab_WRP::OnBnClickedLoadPcWrp()
 
 	if (m_pWRP->loadPointCloud(mulpath) == -1)
 	{
-		AfxMessageBox(TEXT("it is not a ply file for WRP."));
+		AfxMessageBox(L"it is not a ply file for WRP.");
 		return;
 	}
 
@@ -261,18 +261,24 @@ void CTab_WRP::OnBnClickedViewWrp()
 	localPath.Append(L"\\3D_Object_Viewer.exe");
 	_tcscpy_s(path, localPath.GetBuffer());
 
-	TCHAR argParam[MAX_PATH * 3] = { 0 };
+	CFileFind ff;
+	if (ff.FindFile(localPath)) {
+		TCHAR argParam[MAX_PATH * 3] = { 0 };
 
-	int pc_flag = 0;
+		int pc_flag = 0;
 
-	CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
+		CString szArgParam = CString("\"") + (m_argParam)+CString("\"");
 
-	wsprintf(argParam, L"%d %s", pc_flag, szArgParam.GetBuffer());
+		wsprintf(argParam, L"%d %s", pc_flag, szArgParam.GetBuffer());
 
-	auto a = (int)::ShellExecute(NULL, _T("open"),
-		path,																								//실행 파일 경로
-		argParam,																							//argument value 파라미터
-		NULL, SW_SHOW);
+		auto a = (int)::ShellExecute(NULL, _T("open"),
+			path,																								//실행 파일 경로
+			argParam,																							//argument value 파라미터
+			NULL, SW_SHOW);
+	}
+	else {
+		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
+	}
 }
 
 UINT CallFuncWRP(void* param)
@@ -292,28 +298,28 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
 
-	if (m_fieldLens == 0.0) {
-		AfxMessageBox(TEXT("Config value error - field lens"));
+	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
+		AfxMessageBox(L"Config value error - field lens");
 		return;
 	}
 	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
-		AfxMessageBox(TEXT("Config value error - scale"));
+		AfxMessageBox(L"Config value error - scale");
 		return;
 	}
 	if (m_distance == 0.0) {
-		AfxMessageBox(TEXT("Config value error - offset depth"));
+		AfxMessageBox(L"Config value error - offset depth");
 		return;
 	}
 	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(TEXT("Config value error - pixel pitch"));
+		AfxMessageBox(L"Config value error - pixel pitch");
 		return;
 	}
 	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(TEXT("Config value error - pixel number"));
+		AfxMessageBox(L"Config value error - pixel number");
 		return;
 	}
 	if (m_wavelength == 0.0) {
-		AfxMessageBox(TEXT("Config value error - wave length"));
+		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
 
@@ -389,7 +395,7 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
 	}
 
@@ -433,7 +439,7 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ohc") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
 	}
 

@@ -150,7 +150,7 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "xml") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else return;
 	}
 
@@ -164,7 +164,7 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	if (strcmp(mulpath, "") == 0) return;
 
 	if (!m_pDepthMap->readConfig(mulpath)) {
-		AfxMessageBox(TEXT("it is not xml config file for DepthMap."));
+		AfxMessageBox(L"it is not xml config file for DepthMap.");
 		return;
 	}
 
@@ -204,7 +204,7 @@ void CTab_DM::OnBnClickedLoadDImg()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") {
+		if (!ext.CompareNoCase(L"bmp")) {
 			path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 			m_szPath = FileDialog.GetFolderPath();
 			m_szDname = FileDialog.GetFileTitle();
@@ -239,7 +239,7 @@ void CTab_DM::OnBnClickedLoadDImg()
 		WideCharToMultiByte(CP_ACP, 0, wideRGBname, MAX_PATH, mulRGBname, MAX_PATH, NULL, NULL);
 
 		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
-			AfxMessageBox(_TEXT("BMP load failed : Please show LOG."));
+			AfxMessageBox(L"BMP load failed : Please show LOG.");
 		}
 
 		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
@@ -262,7 +262,7 @@ void CTab_DM::OnBnClickedLoadRgbImg()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") {
+		if (!ext.CompareNoCase(L"bmp")) {
 			path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 			m_szPath = FileDialog.GetFolderPath();
 			m_szRGBname = FileDialog.GetFileTitle();
@@ -297,7 +297,7 @@ void CTab_DM::OnBnClickedLoadRgbImg()
 
 
 		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
-			AfxMessageBox(_TEXT("BMP load failed : Please show LOG."));
+			AfxMessageBox(L"BMP load failed : Please show LOG.");
 		}
 
 		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
@@ -333,17 +333,23 @@ void CTab_DM::OnBnClickedViewDm()
 	localPath.Append(L"\\3D_Object_Viewer.exe");
 	_tcscpy_s(path, localPath.GetBuffer());
 
-	TCHAR argParam[MAX_PATH * 3] = { 0 };
+	CFileFind ff;
+	if (ff.FindFile(localPath)) {
+		TCHAR argParam[MAX_PATH * 3] = { 0 };
 
-	CString szArgParamD = CString("\"") + (m_argParamDimg)+CString("\"");
-	CString szArgParamRGB = CString("\"") + (m_argParamRGBimg)+CString("\"");
+		CString szArgParamD = CString("\"") + (m_argParamDimg)+CString("\"");
+		CString szArgParamRGB = CString("\"") + (m_argParamRGBimg)+CString("\"");
 
-	wsprintf(argParam, L"%d %s %s", 1, szArgParamD.GetBuffer(), szArgParamRGB.GetBuffer());
+		wsprintf(argParam, L"%d %s %s", 1, szArgParamD.GetBuffer(), szArgParamRGB.GetBuffer());
 
-	auto a = (int)::ShellExecute(NULL, _T("open"),
-		path,																								//실행 파일 경로
-		argParam,																							//argument value 파라미터
-		NULL, SW_SHOW);
+		auto a = (int)::ShellExecute(NULL, _T("open"),
+			path,																								//실행 파일 경로
+			argParam,																							//argument value 파라미터
+			NULL, SW_SHOW);
+	}
+	else {
+		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
+	}
 }
 
 UINT CallFuncDM(void* param)
@@ -361,24 +367,24 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
 
-	if (m_fieldLens == 0.0) {
-		AfxMessageBox(TEXT("Config value error - field lens"));
+	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
+		AfxMessageBox(L"Config value error - field lens");
 		return;
 	}
 	if (m_numDepth == 0) {
-		AfxMessageBox(TEXT("Config value error - number of depth"));
+		AfxMessageBox(L"Config value error - number of depth");
 		return;
 	}
 	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(TEXT("Config value error - pixel pitch"));
+		AfxMessageBox(L"Config value error - pixel pitch");
 		return;
 	}
 	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(TEXT("Config value error - pixel number"));
+		AfxMessageBox(L"Config value error - pixel number");
 		return;
 	}
 	if (m_wavelength == 0.0) {
-		AfxMessageBox(TEXT("Config value error - wave length"));
+		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
 	auto context = m_pDepthMap->getContext();
@@ -462,7 +468,7 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "bmp") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
 	}
 
@@ -506,7 +512,7 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (ext == "ohc") path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
 	}
 
