@@ -104,8 +104,7 @@ public:
 	* @brief Constructor
 	*/
 	explicit ophTri(void) {
-		is_CPU = true;
-		is_ViewingWindow = false;
+		setViewingWindow(false);
 	}
 
 protected:
@@ -124,7 +123,7 @@ private:
 	OphMeshData* meshData;					/// OphMeshData type data structure pointer
 
 private:
-	Real field_lens;
+	Real fieldLength;
 	Real objSize;							/// Object maximum of width and height / unit :[m]
 	vec3 objShift;							/// Object shift value / Data structure - [shiftX, shiftY, shiftZ] / unit : [m]
 
@@ -149,7 +148,7 @@ public:
 	const Real& getObjSize(void) { return objSize; }
 	const vec3& getObjShift(void) { return objShift; }
 	const vec3&	getIllumination(void) { return illumination; }
-	const Real& getFieldLens(void) { return field_lens; }
+	const Real& getFieldLens(void) { return fieldLength; }
 public:
 	/**
 	* @brief	Triangular mesh basc CGH configuration file load
@@ -192,12 +191,7 @@ public:
 	*/
 	void generateMeshHologram(uint SHADING_FLAG);
 	void generateMeshHologram();
-
-	/**
-	* @brief Generate a Mesh, main funtion.
-	* @return implement time (sec)
-	*/
-	void setMode(bool is_CPU);
+	
 	//virtual int saveAsOhc(const char* fname);
 	/**
 	* @brief Set the value of a variable is_ViewingWindow(true or false)
@@ -229,8 +223,8 @@ private:
 	uint refToGlobal();
 
 	uint loadMeshText(const char* fileName);
-	inline Real transformViewingWindow(Real pt) {
-		Real transPt = -field_lens * pt / (pt - field_lens);
+	inline Real transVW(Real pt) {
+		Real transPt = -fieldLength * pt / (pt - fieldLength);
 		return transPt;
 	}
 private:
@@ -279,10 +273,7 @@ private:
 	Complex<Real>* randTerm;
 	Complex<Real>* phaseTerm;
 	Complex<Real>* convol;
-	bool is_CPU;
 	bool is_ViewingWindow;
-	std::chrono::time_point<std::chrono::system_clock> m_begin;
-	std::chrono::time_point<std::chrono::system_clock> m_end;
 
 };
 
