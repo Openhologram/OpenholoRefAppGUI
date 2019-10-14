@@ -342,7 +342,7 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -388,7 +388,7 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

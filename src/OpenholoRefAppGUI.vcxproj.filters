@@ -75,6 +75,9 @@
     <ClInclude Include="Time.h">
       <Filter>3_Util</Filter>
     </ClInclude>
+    <ClInclude Include="Console.h">
+      <Filter>3_Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenholoRefAppGUI.cpp">
@@ -114,6 +117,9 @@
       <Filter>2_Dialog</Filter>
     </ClCompile>
     <ClCompile Include="Time.cpp">
+      <Filter>3_Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Console.cpp">
       <Filter>3_Util</Filter>
     </ClCompile>
   </ItemGroup>

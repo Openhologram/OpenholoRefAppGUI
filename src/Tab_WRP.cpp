@@ -390,7 +390,7 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -434,7 +434,7 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

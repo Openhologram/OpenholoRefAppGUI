@@ -40,6 +40,7 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeDiffMethodPc();
 	afx_msg void OnCbnSelchangeEncodeMethodPc();
+	bool CheckConfig();
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif

@@ -1,10 +1,22 @@
 #pragma once
 class Time
 {
-public:
+private:
 	Time();
 	~Time();
-	static CString GetTime(CString szDate = L"");
-	static CString GetDate(CString szTime = L"");
+	static Time *instance;
+	static void Destroy() {
+		delete instance;
+	}
+public:
+	static Time* getInstance() {
+		if (instance == nullptr) {
+			instance = new Time();
+			atexit(Destroy);
+		}
+		return instance;
+	}
+	CString GetTime(CString szDate = L"");
+	CString GetDate(CString szTime = L"");
 };
 

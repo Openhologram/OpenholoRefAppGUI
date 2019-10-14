@@ -392,7 +392,7 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -438,7 +438,7 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{

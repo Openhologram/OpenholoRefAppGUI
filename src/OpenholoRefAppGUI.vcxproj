@@ -117,7 +117,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_WINDOWS;_DEBUG;TEST_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;_DEBUG;TEST_MODE;_OPENMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)freeglut_3.0.0\include\;$(SolutionDir)Reference\include\;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -173,7 +173,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_WINDOWS;NDEBUG;TEST_MODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NDEBUG;TEST_MODE;_OPENMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)freeglut_3.0.0\include\;$(SolutionDir)Reference\include\;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -202,6 +202,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Console.h" />
     <ClInclude Include="Dialog_BMP_Viewer.h" />
     <ClInclude Include="Dialog_Progress.h" />
     <ClInclude Include="Dialog_Prompt.h" />
@@ -219,6 +220,7 @@
     <ClInclude Include="Time.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Console.cpp" />
     <ClCompile Include="Dialog_BMP_Viewer.cpp" />
     <ClCompile Include="Dialog_Progress.cpp" />
     <ClCompile Include="Dialog_Prompt.cpp" />

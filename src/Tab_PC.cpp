@@ -5,6 +5,7 @@
 #include "OpenholoRefAppGUI.h"
 #include "OpenholoRefAppGUIDlg.h"
 #include "Tab_PC.h"
+#include "Console.h"
 #include "afxdialogex.h"
 
 
@@ -280,8 +281,9 @@ UINT CallFunc(void* param)
 	pParam->pDialog->m_bFinished = TRUE;
 
 	Complex<Real> **pp = ((ophPointCloud *)pParam->pGEN)->getComplexField();
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	printf("=> Complex Field[0] = %lf / %lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
-
+	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
@@ -290,7 +292,9 @@ UINT CallFunc(void* param)
 void CTab_PC::OnBnClickedGenerate_PC()
 {
 	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
+	bool bChangedConfig = CheckConfig();
+
+	//UpdateData(TRUE);
 
 	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
 		AfxMessageBox(L"Config value error - field lens");
@@ -319,12 +323,8 @@ void CTab_PC::OnBnClickedGenerate_PC()
 
 	auto context = m_pPointCloud->getContext();
 	m_pPointCloud->setOffsetDepth(m_offsetdepth);
-	context.pixel_pitch[_X] = m_pixelpitchX;
-	context.pixel_pitch[_Y] = m_pixelpitchY;
-	context.pixel_number[_X] = m_pixelnumX;
-	context.pixel_number[_Y] = m_pixelnumY;
 	*context.wave_length = m_wavelength;
-	m_pPointCloud->setResolution(context.pixel_number);
+	m_pPointCloud->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
 	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());
 	m_pPointCloud->setViewingWindow(m_buttonViewingWindow.GetCheck());
@@ -344,7 +344,7 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	UpdateData(FALSE); // 수정한 Config 값을 적용하여 생성하도록...
+	//UpdateData(FALSE); // 수정한 Config 값을 적용하여 생성하도록...
 }
 
 
@@ -387,7 +387,7 @@ void CTab_PC::OnBnClickedSaveBmp_PC()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -434,7 +434,7 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 	
 
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -506,4 +506,53 @@ void CTab_PC::OnCbnSelchangeEncodeMethodPc()
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
 	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->GetCurSel();
+}
+
+bool CTab_PC::CheckConfig()
+{
+	bool bChanged		= false;
+	double fieldLens	= m_fieldLens;
+	double scaleX		= m_scaleX;
+	double scaleY		= m_scaleY;
+	double scaleZ		= m_scaleZ;
+	double offsetDepth	= m_offsetdepth;
+	double ppX			= m_pixelpitchX;
+	double ppY			= m_pixelpitchY;
+	unsigned int pnX	= m_pixelnumX;
+	unsigned int pnY	= m_pixelnumY;
+	double wavelength	= m_wavelength;
+	UpdateData(TRUE);
+
+	if (scaleX != m_scaleX || scaleY != m_scaleY || scaleZ != m_scaleZ) {
+		printf("\n*Changed Scale*\nScaleX: %lf -> %lf\nScaleY: %lf -> %lf\nScaleZ: %lf -> %lf\n",
+			scaleX, m_scaleX, scaleY, m_scaleY, scaleZ, m_scaleZ);
+		bChanged = true;
+	}
+	if (offsetDepth != m_offsetdepth) {
+		printf("\n*Changed Offset Depth*\nOffset Depth: %lf -> %lf\n",
+			offsetDepth, m_offsetdepth);
+		bChanged = true;
+	}
+	if (ppX != m_pixelpitchX || ppY != m_pixelpitchY) {
+		printf("\n*Changed Pixel Pitch*\nPixelPitchX: %lf -> %lf\nPixelPitchY: %lf -> %lf\n",
+			ppX, m_pixelpitchX, ppY, m_pixelpitchY);
+		bChanged = true;
+	}
+	if (pnX != m_pixelnumX || pnY != m_pixelnumY) {
+		printf("\n*Changed Pixel Num*\nPixelNumX: %u -> %u\nPixelNumY: %u -> %u\n",
+			pnX, m_pixelnumX, pnY, m_pixelnumY);
+		bChanged = true;
+	}
+	if (fieldLens != m_fieldLens) {
+		printf("\n*Changed Field Length*\nField Length: %lf -> %lf\n",
+			fieldLens, m_fieldLens);
+		bChanged = true;
+	}
+	if (wavelength != m_wavelength) {
+		printf("\n*Changed Wave Length*\nWave Length: %lf -> %lf\n",
+			wavelength, m_wavelength);
+		bChanged = true;
+	}
+
+	return bChanged;
 }

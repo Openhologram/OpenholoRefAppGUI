@@ -5,6 +5,7 @@
 #include "OpenholoRefAppGUI.h"
 #include "OpenholoRefAppGUIDlg.h"
 #include "Tab_DM.h"
+#include "Console.h"
 #include "afxdialogex.h"
 
 #include <ophDepthMap.h>
@@ -222,8 +223,6 @@ void CTab_DM::OnBnClickedLoadDImg()
 	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 	if (strcmp(mulpath, "") == 0) return;
 
-
-	m_bDimg = TRUE;
 	if (m_bRGBimg) {
 		_tcscpy_s(widepath, m_szPath.GetBuffer());
 		WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
@@ -240,12 +239,13 @@ void CTab_DM::OnBnClickedLoadDImg()
 
 		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
+			return;
 		}
-
 		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
 		GetDlgItem(IDC_VIEW_DM_MODEL)->EnableWindow(TRUE);
 		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
 	}
+	m_bDimg = TRUE;
 }
 
 
@@ -280,7 +280,6 @@ void CTab_DM::OnBnClickedLoadRgbImg()
 	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 	if (strcmp(mulpath, "") == 0) return;
 
-	m_bRGBimg = TRUE;
 	if (m_bDimg) {
 		_tcscpy_s(widepath, m_szPath.GetBuffer());
 		WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
@@ -298,12 +297,13 @@ void CTab_DM::OnBnClickedLoadRgbImg()
 
 		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
+			return;
 		}
-
 		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
 		GetDlgItem(IDC_VIEW_DM_MODEL)->EnableWindow(TRUE);
 		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
 	}
+	m_bRGBimg = TRUE;
 }
 
 void CTab_DM::OnBnClickedViewDmImg()
@@ -357,6 +357,11 @@ UINT CallFuncDM(void* param)
 	parammeter *pParam = (parammeter *)param;
 	((ophDepthMap*)pParam->pGEN)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
+
+	Complex<Real> **pp = ((ophDepthMap *)pParam->pGEN)->getComplexField();
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
+	printf("=> Complex Field[0] = %lf / %lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
@@ -389,8 +394,13 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	}
 	auto context = m_pDepthMap->getContext();
 	auto config = m_pDepthMap->getConfig();
+	if (context.pixel_number != ivec2(m_pixelnumX, m_pixelnumY)) {
+		AfxMessageBox(L"Changed resolution config.");
+		m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
+		return;
+	}
 
-	context.pixel_number = ivec2(m_pixelnumX * 3, m_pixelnumY);
+	context.pixel_number = ivec2(m_pixelnumX, m_pixelnumY);
 	context.pixel_pitch = vec2(m_pixelpitchX, m_pixelpitchY);
 	context.wave_length[0] = m_wavelength;
 
@@ -405,7 +415,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
-	
+
 	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(TRUE);
@@ -463,7 +473,7 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -507,7 +517,7 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
