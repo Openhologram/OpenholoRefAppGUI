@@ -39,6 +39,7 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeEncodeMethodDm();
 	afx_msg void OnBnClickedEncodingDm();
+	bool CheckConfig();
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif

@@ -323,7 +323,11 @@ void CTab_PC::OnBnClickedGenerate_PC()
 
 	auto context = m_pPointCloud->getContext();
 	m_pPointCloud->setOffsetDepth(m_offsetdepth);
-	*context.wave_length = m_wavelength;
+	//*context.wave_length = m_wavelength;
+#ifndef USE_3CHANNEL
+	m_pPointCloud->setWaveLength(m_wavelength, 0);
+#else
+#endif
 	m_pPointCloud->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
 	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());
@@ -344,7 +348,7 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	//UpdateData(FALSE); // 수정한 Config 값을 적용하여 생성하도록...
+	//UpdateData(FALSE); // 변수값 변경이 없으므로 주석처리
 }
 
 

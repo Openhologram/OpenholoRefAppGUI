@@ -370,7 +370,7 @@ UINT CallFuncDM(void* param)
 void CTab_DM::OnBnClickedGenerate_DM()
 {
 	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
+	bool bChangedConfig = CheckConfig();
 
 	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
 		AfxMessageBox(L"Config value error - field lens");
@@ -392,17 +392,15 @@ void CTab_DM::OnBnClickedGenerate_DM()
 		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
-	auto context = m_pDepthMap->getContext();
-	auto config = m_pDepthMap->getConfig();
-	if (context.pixel_number != ivec2(m_pixelnumX, m_pixelnumY)) {
-		AfxMessageBox(L"Changed resolution config.");
-		m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
+	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
+	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
+	if ((rgbImg[_X] != m_pixelnumX || rgbImg[_Y] != m_pixelnumY) ||
+		(depthImg[_X] != m_pixelnumX || depthImg[_Y] != m_pixelnumY)) {
+		AfxMessageBox(L"Value differs between Image Size and Config value.");
 		return;
 	}
 
-	context.pixel_number = ivec2(m_pixelnumX, m_pixelnumY);
-	context.pixel_pitch = vec2(m_pixelpitchX, m_pixelpitchY);
-	context.wave_length[0] = m_wavelength;
+	OphDepthMapConfig config;
 
 	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
 	config.far_depthmap = m_farDepth;
@@ -413,6 +411,13 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	config.num_of_depth = m_numDepth;
 	config.RANDOM_PHASE = 0;
 
+	m_pDepthMap->setConfig(config);
+#ifndef USE_3CHANNEL
+	m_pDepthMap->setWaveLength(m_wavelength, 0);
+#else
+#endif
+	//m_pDepthMap->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
+	m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
@@ -432,7 +437,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	UpdateData(FALSE);
+	//UpdateData(FALSE);
 }
 
 void CTab_DM::OnBnClickedEncodingDm()
@@ -578,4 +583,53 @@ void CTab_DM::OnCbnSelchangeEncodeMethodDm()
 	// TODO: Add your control notification handler code here
 	UpdateData(TRUE);
 	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->GetCurSel();
+}
+
+
+bool CTab_DM::CheckConfig()
+{
+	bool bChanged		= false;
+	double fieldLens	= m_fieldLens;
+	double nearDepth	= m_nearDepth;
+	double farDepth		= m_farDepth;
+	int numDepth		= m_numDepth;
+	double ppX			= m_pixelpitchX;
+	double ppY			= m_pixelpitchY;
+	unsigned int pnX	= m_pixelnumX;
+	unsigned int pnY	= m_pixelnumY;
+	double wavelength	= m_wavelength;
+	UpdateData(TRUE);
+
+	if (nearDepth != m_nearDepth || farDepth != m_farDepth) {
+		printf("\n*Changed Depth Range*\nNear Depth: %lf -> %lf\nFar Depth: %lf -> %lf\n",
+			nearDepth, m_nearDepth, farDepth, m_farDepth);
+		bChanged = true;
+	}
+	if (numDepth != m_numDepth) {
+		printf("\n*Changed Num of Depth*\nNum Depth: %d -> %d\n",
+			numDepth, m_numDepth);
+		bChanged = true;
+	}
+	if (ppX != m_pixelpitchX || ppY != m_pixelpitchY) {
+		printf("\n*Changed Pixel Pitch*\nPixelPitchX: %lf -> %lf\nPixelPitchY: %lf -> %lf\n",
+			ppX, m_pixelpitchX, ppY, m_pixelpitchY);
+		bChanged = true;
+	}
+	if (pnX != m_pixelnumX || pnY != m_pixelnumY) {
+		printf("\n*Changed Pixel Num*\nPixelNumX: %u -> %u\nPixelNumY: %u -> %u\n",
+			pnX, m_pixelnumX, pnY, m_pixelnumY);
+		bChanged = true;
+	}
+	if (fieldLens != m_fieldLens) {
+		printf("\n*Changed Field Length*\nField Length: %lf -> %lf\n",
+			fieldLens, m_fieldLens);
+		bChanged = true;
+	}
+	if (wavelength != m_wavelength) {
+		printf("\n*Changed Wave Length*\nWave Length: %lf -> %lf\n",
+			wavelength, m_wavelength);
+		bChanged = true;
+	}
+
+	return bChanged;
 }
