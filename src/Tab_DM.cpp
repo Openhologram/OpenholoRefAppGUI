@@ -394,14 +394,15 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	}
 	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
 	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
+
+	// 불러온 이미지 해상도와 해상도 설정값을 비교
 	if ((rgbImg[_X] != m_pixelnumX || rgbImg[_Y] != m_pixelnumY) ||
 		(depthImg[_X] != m_pixelnumX || depthImg[_Y] != m_pixelnumY)) {
 		AfxMessageBox(L"Value differs between Image Size and Config value.");
 		return;
 	}
 
-	OphDepthMapConfig config;
-
+	OphDepthMapConfig config = m_pDepthMap->getConfig();
 	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
 	config.far_depthmap = m_farDepth;
 	config.near_depthmap = m_nearDepth;
@@ -410,7 +411,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
 	config.num_of_depth = m_numDepth;
 	config.RANDOM_PHASE = 0;
-
 	m_pDepthMap->setConfig(config);
 #ifndef USE_3CHANNEL
 	m_pDepthMap->setWaveLength(m_wavelength, 0);
@@ -436,6 +436,10 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
+
+	char szMsg[256] = { 0, };
+	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pDepthMap->getElapsedTime());
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 
 	//UpdateData(FALSE);
 }

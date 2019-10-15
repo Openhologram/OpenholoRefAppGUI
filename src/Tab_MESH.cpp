@@ -354,7 +354,9 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	UpdateData(FALSE);
+	char szMsg[256] = { 0, };
+	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pMesh->getElapsedTime());
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 }
 
 

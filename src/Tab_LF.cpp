@@ -305,7 +305,9 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	progress.DoModal();
 	progress.DestroyWindow();
 
-	UpdateData(FALSE);
+	char szMsg[256] = { 0, };
+	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pLightField->getElapsedTime());
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 }
 
 void CTab_LF::OnBnClickedEncodingLf()

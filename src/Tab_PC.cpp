@@ -343,10 +343,13 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	pParam->pGEN = m_pPointCloud;
 	pParam->flag = m_idxDiff;
 	pParam->pDialog = &progress;
-
 	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
+
+	char szMsg[256] = { 0, };
+	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pPointCloud->getElapsedTime());
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 
 	//UpdateData(FALSE); // 변수값 변경이 없으므로 주석처리
 }

@@ -424,3 +424,31 @@ void COpenholoRefAppDlg::OnLButtonUp(UINT nFlags, CPoint point)
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
 }
+
+void COpenholoRefAppDlg::report(char *szMsg)
+{
+#ifdef TEST_MODE
+	unsigned long long nLen = strlen(szMsg);
+	HWND hwndNotepad = NULL;
+	hwndNotepad = ::FindWindow(NULL, L"test.txt - 메모장");
+	if (hwndNotepad == NULL) {
+		ShellExecute(NULL, L"open", L"D:\\test.txt", NULL, NULL, SW_SHOW);
+		Sleep(100);
+		hwndNotepad = ::FindWindow(NULL, L"test.txt - 메모장");
+	}
+	if (hwndNotepad) {
+		hwndNotepad = ::FindWindowEx(hwndNotepad, NULL, L"edit", NULL);
+
+		char *pBuf = NULL;
+		int nCur = ::SendMessageA(hwndNotepad, WM_GETTEXTLENGTH, 0, 0);
+		pBuf = new char[nCur + nLen + 1];
+
+		::SendMessageA(hwndNotepad, WM_GETTEXT, nCur + 1, (LPARAM)pBuf);
+
+		wsprintfA(pBuf, "%s%s", pBuf, szMsg);
+
+		::SendMessageA(hwndNotepad, WM_SETTEXT, 0, (LPARAM)pBuf);
+		delete[] pBuf;
+	}
+#endif
+}
