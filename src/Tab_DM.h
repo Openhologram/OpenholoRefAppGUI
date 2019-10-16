@@ -43,6 +43,8 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
+	void InitUI();
+
 	ophDepthMap*	m_pDepthMap;
 	CString			m_szPath;
 	CString			m_szDname;

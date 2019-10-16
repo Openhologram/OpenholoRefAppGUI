@@ -108,8 +108,12 @@ BOOL CTab_DM::AutoTest()
 	Dialog_Prompt *prompt = new Dialog_Prompt;
 	if (IDOK == prompt->DoModal()) {
 		int nRepeat = prompt->GetInputInteger();
-		for (int i = 0; i < nRepeat; i++)
+		for (int i = 0; i < nRepeat; i++) {
 			SendMessage(WM_COMMAND, MAKEWPARAM(IDC_GENERATE_DM, BN_CLICKED), 0L);
+			Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
+			printf("%d / %d\n", i + 1, nRepeat);
+			Console::getInstance()->ResetColor();
+		}
 	}
 	delete prompt;
 	m_bTest = FALSE;
@@ -188,6 +192,9 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	GetDlgItem(IDC_LOAD_D_IMG)->EnableWindow(TRUE);
 	GetDlgItem(IDC_LOAD_RGB_IMG)->EnableWindow(TRUE);
 
+	// 이미지를 로드하면, pixel num 변경을 금지.
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, false, 0);
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, false, 0);
 	UpdateData(FALSE);
 }
 
@@ -246,6 +253,10 @@ void CTab_DM::OnBnClickedLoadDImg()
 		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
 	}
 	m_bDimg = TRUE;
+
+	// 이미지를 로드하면, pixel num 변경을 금지.
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
 }
 
 
@@ -304,6 +315,9 @@ void CTab_DM::OnBnClickedLoadRgbImg()
 		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
 	}
 	m_bRGBimg = TRUE;
+	// 이미지를 로드하면, pixel num 변경을 금지.
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
+	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
 }
 
 void CTab_DM::OnBnClickedViewDmImg()
@@ -392,16 +406,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
-	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
-	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
-
-	// 불러온 이미지 해상도와 해상도 설정값을 비교
-	if ((rgbImg[_X] != m_pixelnumX || rgbImg[_Y] != m_pixelnumY) ||
-		(depthImg[_X] != m_pixelnumX || depthImg[_Y] != m_pixelnumY)) {
-		AfxMessageBox(L"Value differs between Image Size and Config value.");
-		return;
-	}
-
+	
 	OphDepthMapConfig config = m_pDepthMap->getConfig();
 	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
 	config.far_depthmap = m_farDepth;
@@ -420,6 +425,17 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
+
+	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
+	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
+
+	// 불러온 이미지 해상도와 해상도 설정값을 비교
+	if ((rgbImg[_X] != m_pixelnumX || rgbImg[_Y] != m_pixelnumY) ||
+		(depthImg[_X] != m_pixelnumX || depthImg[_Y] != m_pixelnumY)) {
+		AfxMessageBox(L"Value differs between Image Size and Config value.");
+		InitUI();
+		return;
+	}
 
 	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
@@ -636,4 +652,19 @@ bool CTab_DM::CheckConfig()
 	}
 
 	return bChanged;
+}
+
+void CTab_DM::InitUI()
+{
+	GetDlgItem(IDC_READ_CONFIG_DM)->EnableWindow(TRUE);
+
+	GetDlgItem(IDC_LOAD_D_IMG)->EnableWindow(TRUE);
+	GetDlgItem(IDC_LOAD_RGB_IMG)->EnableWindow(TRUE);
+	m_bRGBimg = false;
+	m_bDimg = false;
+
+	GetDlgItem(IDC_GENERATE_DM)->EnableWindow(FALSE);
+	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(FALSE);
 }
