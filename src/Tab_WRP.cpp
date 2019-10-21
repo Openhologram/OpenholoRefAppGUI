@@ -6,7 +6,7 @@
 #include "OpenholoRefAppGUIDlg.h"
 #include "Tab_WRP.h"
 #include "afxdialogex.h"
-
+#include "Console.h"
 
 // CTab_WRP dialog
 #include <ophWRP.h>
@@ -284,10 +284,13 @@ void CTab_WRP::OnBnClickedViewWrp()
 UINT CallFuncWRP(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	((ophWRP*)pParam->pGEN)->autoScaling();
-	((ophWRP*)pParam->pGEN)->calculateWRP();
 	((ophWRP*)pParam->pGEN)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
+
+	Complex<Real> **pp = ((ophWRP *)pParam->pGEN)->getComplexField();
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
+	printf("=> Complex Field[0] = %.16lf / %.16lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
@@ -340,6 +343,8 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	GetDlgItem(IDC_SAVE_OHC_WRP)->EnableWindow(TRUE);
 	GetDlgItem(IDC_ENCODING_WRP)->EnableWindow(TRUE);
 
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
+
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;
@@ -389,10 +394,53 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 	// TODO: Add your control notification handler code here
 	TCHAR current_path[MAX_PATH];
 	GetCurrentDirectory(MAX_PATH, current_path);
-
-	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
+#if 0
+	LPTSTR szFilter = 
+		L"BMP File (*.bmp)|*.bmp|\
+		JPG File (*.jpg)|*.jpg|\
+		GIF File (*.gif)|*.gif|\
+		PNG File (*.png)|*.png|\
+		All Files (*.*)|*.*||";
 	
 	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"WRP"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString path;
+	if (FileDialog.DoModal() == IDOK)
+	{		
+		CString name = FileDialog.GetFileName();
+		path.Format(L"%s\\%s", FileDialog.GetFolderPath(), FileDialog.GetFileName());
+		int iFilter = FileDialog.GetOFN().nFilterIndex;
+		switch (iFilter) {
+		case 1: {
+			if (name.Find(L".bmp") < 0)//.CompareNoCase(L"bmp")) 
+				path.Append(L".bmp");
+			break;
+		}
+		case 2: {
+			if (name.Find(L".jpg") < 0)
+				path.Append(L".jpg");
+			break;
+		}
+		case 3: {
+			if (name.Find(L".gif") < 0)
+				path.Append(L".gif");
+			break;
+		}
+		case 4: {
+			if (name.Find(L".png") < 0)
+				path.Append(L".png");
+			break;
+		}
+		default: {
+			if (name.Find(L".bmp") < 0)
+				path.Append(L".bmp");
+			break;
+		}
+		}
+	}
+#else
+	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
+
+	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -401,6 +449,7 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
 	}
 
+#endif
 	SetCurrentDirectory(current_path);
 
 	TCHAR widepath[MAX_PATH] = { 0 };

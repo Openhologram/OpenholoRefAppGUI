@@ -6,7 +6,7 @@
 #include "OpenholoRefAppGUIDlg.h"
 #include "Tab_MESH.h"
 #include "afxdialogex.h"
-
+#include "Console.h"
 
 // CTab_MESH dialog
 
@@ -290,6 +290,11 @@ UINT CallFuncMESH(void* param)
 	((ophTri*)pParam->pGEN)->objScaleShift();
 	((ophTri*)pParam->pGEN)->generateMeshHologram(((ophTri*)pParam->pGEN)->SHADING_FLAT);
 	pParam->pDialog->m_bFinished = TRUE;
+
+	Complex<Real> **pp = ((ophTri *)pParam->pGEN)->getComplexField();
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
+	printf("=> Complex Field[0] = %.16lf / %.16lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
@@ -341,6 +346,8 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	GetDlgItem(IDC_SAVE_OHC_MESH)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_MESH)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
 
 	Dialog_Progress progress;
 

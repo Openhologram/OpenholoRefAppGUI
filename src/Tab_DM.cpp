@@ -441,6 +441,8 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(TRUE);
 
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
+
 	Dialog_Progress progress;
 
 	BOOL bIsFinish = FALSE;

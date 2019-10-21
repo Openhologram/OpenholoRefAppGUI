@@ -6,7 +6,7 @@
 #include "OpenholoRefAppGUIDlg.h"
 #include "Tab_LF.h"
 #include "afxdialogex.h"
-
+#include "Console.h"
 // CTab_LF dialog
 
 #include <ophLightField.h>
@@ -247,6 +247,11 @@ UINT CallFuncLF(void* param)
 	parammeter *pParam = (parammeter *)param;
 	((ophLF*)pParam->pGEN)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
+
+	Complex<Real> **pp = ((ophLF *)pParam->pGEN)->getComplexField();
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
+	printf("=> Complex Field[0] = %.16lf / %.16lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
@@ -292,6 +297,8 @@ void CTab_LF::OnBnClickedGenerate_LF()
 	GetDlgItem(IDC_SAVE_OHC_LF)->EnableWindow(TRUE);
 	GetDlgItem(IDC_SAVE_BMP_LF)->EnableWindow(FALSE);
 	GetDlgItem(IDC_ENCODING_LF)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
 
 	Dialog_Progress progress;
 
