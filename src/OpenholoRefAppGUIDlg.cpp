@@ -365,6 +365,16 @@ void COpenholoRefAppDlg::OnBnClickedLogCheck()
 	ShowWindowAsync(GetConsoleWindow(), m_buttonLog.GetCheck() ? SW_SHOW : SW_HIDE);
 }
 
+void COpenholoRefAppDlg::ForegroundConsole()
+{
+	HWND hConsole = GetConsoleWindow();
+	if (hConsole) {
+		if (::IsIconic(hConsole)) {
+			::ShowWindow(hConsole, SW_RESTORE);
+		}
+		::SetForegroundWindow(hConsole);
+	}
+}
 
 void COpenholoRefAppDlg::OnClose()
 {
@@ -389,12 +399,16 @@ BOOL COpenholoRefAppDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	CPoint pt;
 	GetCursorPos(&pt);
 	m_picOphLogo.GetWindowRect(m_rcOPH);
+	m_picKetiLogo.GetWindowRect(m_rcKETI);
 
 	if (m_rcOPH.PtInRect(pt)) {
 		SetCursor(AfxGetApp()->LoadStandardCursor(MAKEINTRESOURCE(IDC_HAND)));
 		return TRUE;
 	}
-
+	else if (m_rcKETI.PtInRect(pt)) {
+		SetCursor(AfxGetApp()->LoadStandardCursor(MAKEINTRESOURCE(IDC_HAND)));
+		return TRUE;
+	}
 	return CDialogEx::OnSetCursor(pWnd, nHitTest, message);
 }
 
@@ -403,9 +417,15 @@ void COpenholoRefAppDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
 	ScreenToClient(&m_rcOPH);
+	ScreenToClient(&m_rcKETI);
 	if (!m_bClickOPH && m_rcOPH.PtInRect(point)) {
 		m_bClickOPH = TRUE;
 		m_picOphLogo.GetWindowRect(m_rcOPH);
+		return;
+	}
+	else if (!m_bClickKETI && m_rcKETI.PtInRect(point)) {
+		m_bClickKETI = TRUE;
+		m_picKetiLogo.GetWindowRect(m_rcKETI);
 		return;
 	}
 	CDialogEx::OnLButtonDown(nFlags, point);
@@ -416,10 +436,17 @@ void COpenholoRefAppDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
 	ScreenToClient(&m_rcOPH);
+	ScreenToClient(&m_rcKETI);
 	if (m_bClickOPH && m_rcOPH.PtInRect(point)) {
 		ShellExecute(NULL, L"open", L"http://openholo.org/", NULL, NULL, SW_SHOWNORMAL);
 		m_bClickOPH = FALSE;
 		m_picOphLogo.GetWindowRect(m_rcOPH);
+		return;
+	}
+	else if (m_bClickKETI&& m_rcKETI.PtInRect(point)) {
+		ShellExecute(NULL, L"open", L"https://www.keti.re.kr/", NULL, NULL, SW_SHOWNORMAL);
+		m_bClickKETI = FALSE;
+		m_picKetiLogo.GetWindowRect(m_rcKETI);
 		return;
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);

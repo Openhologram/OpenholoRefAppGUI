@@ -51,14 +51,14 @@ protected:
 	void initTabs(void);
 
 public:
-
+	void ForegroundConsole();
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
 	BOOL IsGeforceGPU();
 	void report(char *szMsg);
 
 	CImage		m_imgOPH_LOGO, m_imgKETI_LOGO;
-	CRect		m_rcOPH;
-	BOOL		m_bClickOPH;
+	CRect		m_rcOPH, m_rcKETI;
+	BOOL		m_bClickOPH, m_bClickKETI;
 
 	CStatic m_picOphLogo;
 	CStatic m_picKetiLogo;
