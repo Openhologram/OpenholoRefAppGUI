@@ -42,6 +42,26 @@ BOOL COpenholoRefApp::InitInstance()
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.
 
+	HANDLE hMutex = NULL;
+	hMutex = CreateMutex(NULL, TRUE, L"OpenholoRefAppGUI");
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		ReleaseMutex(hMutex);
+
+		HWND hWndPrev, hWndChild;
+		hWndPrev = ::FindWindow(NULL, L"Openholo Reference Software-Generation");
+		if (hWndPrev) {
+			hWndChild = GetLastActivePopup(hWndPrev);
+			if (IsIconic(hWndChild))
+				ShowWindow(hWndPrev, SW_RESTORE);
+			SetForegroundWindow(hWndChild);
+		}
+		else {
+			AfxMessageBox(L"Already running.");
+		}
+		return FALSE;
+	}
+	ReleaseMutex(hMutex);
+
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	INITCOMMONCONTROLSEX InitCtrls;
 	InitCtrls.dwSize = sizeof(InitCtrls);
