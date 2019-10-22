@@ -423,8 +423,10 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	m_pDepthMap->setWaveLength(m_wavelength, 0);
 #else
 #endif
-	//m_pDepthMap->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
-	m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
+	if (bChangedConfig) {
+		m_pDepthMap->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
+		m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
+	}
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
 	m_pDepthMap->setPropagationMethod(m_idxPropagation);
