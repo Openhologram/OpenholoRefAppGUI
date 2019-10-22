@@ -36,6 +36,7 @@ CTab_DM::CTab_DM(CWnd* pParent /*=NULL*/)
 	, m_argParamRGBimg()
 	, m_resultPath()
 	, m_idxEncode(6)
+	, m_idxPropagation(1)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
 #endif
@@ -80,6 +81,7 @@ BEGIN_MESSAGE_MAP(CTab_DM, CDialogEx)
 	ON_BN_CLICKED(IDC_VIEW_DM_BMP, &CTab_DM::OnBnClickedViewDmBmp)
 	ON_BN_CLICKED(IDC_VIEW_DM_IMG, &CTab_DM::OnBnClickedViewDmImg)
 	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_DM, &CTab_DM::OnCbnSelchangeEncodeMethodDm)
+	ON_CBN_SELCHANGE(IDC_PROPAGATION_METHOD_DM, &CTab_DM::OnCbnSelchangePropagationMethodDm)
 	ON_BN_CLICKED(IDC_ENCODING_DM, &CTab_DM::OnBnClickedEncodingDm)
 END_MESSAGE_MAP()
 
@@ -425,6 +427,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
+	m_pDepthMap->setPropagationMethod(m_idxPropagation);
 
 	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
 	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
@@ -478,6 +481,7 @@ void CTab_DM::OnBnClickedEncodingDm()
 		case ophGen::ENCODE_SIMPLENI:
 		case ophGen::ENCODE_BURCKHARDT:
 		case ophGen::ENCODE_TWOPHASE:
+		case ophGen::ENCODE_SYMMETRIZATION:
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 			break;
 		case ophGen::ENCODE_SSB:
@@ -580,8 +584,14 @@ BOOL CTab_DM::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Two-Phase");
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Single-Side Band");
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Off-SSB");
+	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Symmetrization");
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->SetCurSel(m_idxEncode);
+
+	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->AddString(L"None");
+	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->AddString(L"Angular Spectrum");
+
+	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->SetCurSel(m_idxPropagation);
 
 	// GeForce GPU 일 때만, 활성화
 	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
@@ -606,6 +616,14 @@ void CTab_DM::OnCbnSelchangeEncodeMethodDm()
 	UpdateData(TRUE);
 	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->GetCurSel();
 }
+
+void CTab_DM::OnCbnSelchangePropagationMethodDm()
+{
+	// TODO: Add your control notification handler code here
+	UpdateData(TRUE);
+	m_idxPropagation = ((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->GetCurSel();
+}
+
 
 
 bool CTab_DM::CheckConfig()

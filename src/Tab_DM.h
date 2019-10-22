@@ -38,6 +38,7 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeEncodeMethodDm();
+	afx_msg void OnCbnSelchangePropagationMethodDm();
 	afx_msg void OnBnClickedEncodingDm();
 	bool CheckConfig();
 #ifdef TEST_MODE
@@ -70,7 +71,7 @@ public:
 	double	m_wavelength;
 
 	int		m_idxEncode;
-
+	int		m_idxPropagation;
 	CButton m_buttonGPU;
 	CButton m_buttonSaveBmp;
 	CButton m_buttonSaveOhc;
