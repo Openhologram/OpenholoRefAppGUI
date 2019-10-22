@@ -481,7 +481,6 @@ void CTab_DM::OnBnClickedEncodingDm()
 		case ophGen::ENCODE_SIMPLENI:
 		case ophGen::ENCODE_BURCKHARDT:
 		case ophGen::ENCODE_TWOPHASE:
-		case ophGen::ENCODE_SYMMETRIZATION:
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 			break;
 		case ophGen::ENCODE_SSB:
@@ -489,6 +488,9 @@ void CTab_DM::OnBnClickedEncodingDm()
 			break;
 		case ophGen::ENCODE_OFFSSB:
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
+			break;
+		case ophGen::ENCODE_SYMMETRIZATION:
+			m_pDepthMap->ophGen::encoding(m_idxEncode);
 			break;
 		}
 		m_pDepthMap->normalizeEncoded();
