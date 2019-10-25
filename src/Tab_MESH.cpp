@@ -189,7 +189,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	m_pixelnumX = context.pixel_number[_X];
 	m_pixelnumY = context.pixel_number[_Y];
 
-	m_wavelength = *context.wave_length;
+	m_wavelength = context.wave_length[0];
 
 	//m_pPointCloud->getScale(scale);
 	//auto context = m_pPointCloud->getContext();
@@ -337,7 +337,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	context.pixel_number[_X] = m_pixelnumX;
 	context.pixel_number[_Y] = m_pixelnumY;
 
-	*context.wave_length = m_wavelength;
+	context.wave_length[0] = m_wavelength;
 
 	//m_pMesh->setMode(!m_buttonGPU.GetCheck());
 	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());

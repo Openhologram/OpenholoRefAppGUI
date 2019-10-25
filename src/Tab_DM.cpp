@@ -187,7 +187,7 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	int pixX = context.pixel_number[_X];
 	m_pixelnumX = context.pixel_number[_X];//pixX / 3;
 	m_pixelnumY = context.pixel_number[_Y];
-	m_wavelength = *context.wave_length;
+	m_wavelength = context.wave_length[0];
 
 	m_bConfig = true;
 	//if (m_bDimg && m_bRGBimg) GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
@@ -419,10 +419,8 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	config.num_of_depth = m_numDepth;
 	config.RANDOM_PHASE = 0;
 	m_pDepthMap->setConfig(config);
-#ifndef USE_3CHANNEL
 	m_pDepthMap->setWaveLength(m_wavelength, 0);
-#else
-#endif
+
 	if (bChangedConfig) {
 		m_pDepthMap->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
 		m_pDepthMap->setResolution(ivec2(m_pixelnumX, m_pixelnumY));

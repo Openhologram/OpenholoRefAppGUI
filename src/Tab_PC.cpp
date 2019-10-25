@@ -189,7 +189,7 @@ void CTab_PC::OnBnClickedReadConfig_PC()
 	m_pixelpitchY = context.pixel_pitch[_Y];
 	m_pixelnumX = context.pixel_number[_X];
 	m_pixelnumY = context.pixel_number[_Y];
-	m_wavelength = *context.wave_length;
+	m_wavelength = context.wave_length[0];
 
 	m_bConfig = true;
 	if (m_bPC) m_buttonGenerate.EnableWindow(TRUE);
@@ -324,10 +324,9 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	auto context = m_pPointCloud->getContext();
 	m_pPointCloud->setOffsetDepth(m_offsetdepth);
 	//*context.wave_length = m_wavelength;
-#ifndef USE_3CHANNEL
+
 	m_pPointCloud->setWaveLength(m_wavelength, 0);
-#else
-#endif
+
 	m_pPointCloud->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
 	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());

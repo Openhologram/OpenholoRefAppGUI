@@ -196,7 +196,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 	m_pixelpitchY = context.pixel_pitch[_Y];
 	m_pixelnumX = context.pixel_number[_X];
 	m_pixelnumY = context.pixel_number[_Y];
-	m_wavelength = *context.wave_length;
+	m_wavelength = context.wave_length[0];
 	m_numofWRP = m_pWRP->getNumOfWRP();
 	m_locationWRP = m_pWRP->getLocation();
 
@@ -332,7 +332,7 @@ void CTab_WRP::OnBnClickedGenerateWrp()
 	context.pixel_pitch[_Y] = m_pixelpitchY;
 	context.pixel_number[_X] = m_pixelnumX;
 	context.pixel_number[_Y] = m_pixelnumY;
-	*context.wave_length = m_wavelength;
+	context.wave_length[0] = m_wavelength;
 	
 	m_pWRP->setMode(!m_buttonGPU.GetCheck());
 	m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
