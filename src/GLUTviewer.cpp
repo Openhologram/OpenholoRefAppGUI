@@ -128,7 +128,7 @@ void glwin::GLUTviewer::initGLUT(int *argc, char **argv) {
 void glwin::GLUTviewer::setModelVertexArray(const vector<float> &VertexArray) {
 	if (ModelVertex.size()) ModelVertex.clear();
 
-	n_points = VertexArray.size() / 3;
+	n_points = (int)VertexArray.size() / 3;
 	for (int i = 0; i < n_points; ++i) {
 		vec3 Vertex(VertexArray[3 * i + 0], VertexArray[3 * i + 1], VertexArray[3 * i + 2]);
 		ModelVertex.push_back(Vertex);
@@ -139,7 +139,7 @@ void glwin::GLUTviewer::setModelVertexArray(const vector<float> &VertexArray) {
 void glwin::GLUTviewer::setModelVertexArray(const vector<vec3> &VertexArray) {
 	if (ModelVertex.size()) ModelVertex.clear();
 
-	n_points = VertexArray.size();
+	n_points = (int)VertexArray.size();
 	ModelVertex = VertexArray;
 }
 
@@ -280,38 +280,39 @@ void glwin::GLUTviewer::drawGrid(const float unitMM, const int grid) {
 }
 
 
-void glwin::GLUTviewer::drawVoxel(const vec3 &vertex, const vec3 &color) {
-	glColor3f(color[0], color[1], color[2]);
+void glwin::GLUTviewer::drawVoxel(const vec3 &vertex, const vec3 &color)
+{
+	glColor3f((GLfloat)color[0], (GLfloat)color[1], (GLfloat)color[2]);
 	glBegin(GL_QUADS); {
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
 
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
 
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
 
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
 
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] + voxelSize / 2, vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] + voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
 
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
-		glVertex3f(vertex[_X] + voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] - voxelSize / 2);
-		glVertex3f(vertex[_X] - voxelSize / 2, vertex[_Y] - voxelSize / 2, vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] + voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] - voxelSize / 2);
+		glVertex3f((GLfloat)vertex[_X] - voxelSize / 2, (GLfloat)vertex[_Y] - voxelSize / 2, (GLfloat)vertex[_Z] + voxelSize / 2);
 	} glEnd();
 }
 
@@ -553,8 +554,9 @@ void glwin::GLUTviewer::doMenu(GLint value) {
 }
 
 
-void glwin::GLUTviewer::doDisplay() {
-	glClearColor(bgColor[0], bgColor[1], bgColor[2], 1.f);
+void glwin::GLUTviewer::doDisplay()
+{
+	glClearColor((GLclampf)bgColor[0], (GLclampf)bgColor[1], (GLclampf)bgColor[2], 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	

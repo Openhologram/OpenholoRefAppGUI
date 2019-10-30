@@ -40,6 +40,8 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
+	CString GetEncodeName();
+
 	ophLF			*m_pLightField;
 	bool			m_bConfig;
 	bool			m_bDir;

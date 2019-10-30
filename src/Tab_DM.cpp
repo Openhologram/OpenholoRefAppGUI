@@ -358,10 +358,7 @@ void CTab_DM::OnBnClickedViewDm()
 
 		wsprintf(argParam, L"%d %s %s", 1, szArgParamD.GetBuffer(), szArgParamRGB.GetBuffer());
 
-		auto a = (int)::ShellExecute(NULL, _T("open"),
-			path,																								//실행 파일 경로
-			argParam,																							//argument value 파라미터
-			NULL, SW_SHOW);
+		::ShellExecute(NULL, _T("open"), path, argParam, NULL, SW_SHOW);
 	}
 	else {
 		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
@@ -374,9 +371,12 @@ UINT CallFuncDM(void* param)
 	((ophDepthMap*)pParam->pGEN)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	Complex<Real> **pp = ((ophDepthMap *)pParam->pGEN)->getComplexField();
+	ophDepthMap *pDepth = ((ophDepthMap *)pParam->pGEN);
+	Complex<Real> **pp = pDepth->getComplexField();
+	
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-	printf("=> Complex Field[0] = %lf / %lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	for(uint i=0;i< pDepth->getContext().waveNum;i++)
+		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -490,8 +490,7 @@ void CTab_DM::OnBnClickedEncodingDm()
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
 			break;
 		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pDepthMap->ophGen::encoding(m_idxEncode);
-			break;
+			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 		}
 		m_pDepthMap->normalizeEncoded();
 	}
@@ -506,7 +505,17 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+
+	CString szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
+	szFileName.AppendFormat(L"%dch_", m_pDepthMap->getContext().waveNum);
+	szFileName.AppendFormat(L"%dx%d_", m_pDepthMap->getContext().pixel_number[_X], m_pDepthMap->getContext().pixel_number[_Y]);
+	szFileName.AppendFormat(L"d%d_", m_pDepthMap->getNumOfDepth());
+	szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+	szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"None" : L"AS");
+	szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
+	szFileName.AppendFormat(L"%s", GetEncodeName());
+
+	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -525,7 +534,8 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 
 	if (strcmp(mulpath, "") == 0) return;
-	m_pDepthMap->save(mulpath, 8);
+	auto size = m_pDepthMap->getEncodeSize();
+	m_pDepthMap->save(mulpath, 8, nullptr, size[_X], size[_Y]);
 
 	GetDlgItem(IDC_VIEW_DM_BMP)->EnableWindow(TRUE);
 }
@@ -572,6 +582,22 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	}
 }
 
+CString CTab_DM::GetEncodeName()
+{
+	switch (m_idxEncode)
+	{
+	case 0: return L"Phase";
+	case 1: return L"Amplitude";
+	case 2: return L"Real";
+	case 3: return L"SimpleNI";
+	case 4: return L"Burckhardt";
+	case 5: return L"TwoPhase";
+	case 6: return L"SSB";
+	case 7: return L"OffSSB";
+	case 8: return L"Symmetrization";
+	default: return L"Unknown";
+	}
+}
 
 BOOL CTab_DM::OnInitDialog()
 {

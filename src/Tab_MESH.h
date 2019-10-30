@@ -39,6 +39,8 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
+	CString GetEncodeName();
+
 	bool m_bConfig;
 	bool m_bMeshData;
 	bool m_bEncode;

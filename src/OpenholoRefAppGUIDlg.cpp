@@ -7,7 +7,6 @@
 #include "OpenholoRefAppGUIDlg.h"
 #include "afxdialogex.h"
 #include <d3d9.h>
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -467,7 +466,7 @@ void COpenholoRefAppDlg::report(char *szMsg)
 		hwndNotepad = ::FindWindowEx(hwndNotepad, NULL, L"edit", NULL);
 
 		char *pBuf = NULL;
-		int nCur = ::SendMessageA(hwndNotepad, WM_GETTEXTLENGTH, 0, 0);
+		int nCur = (int)::SendMessageA(hwndNotepad, WM_GETTEXTLENGTH, 0, 0);
 		pBuf = new char[nCur + nLen + 1];
 
 		::SendMessageA(hwndNotepad, WM_GETTEXT, nCur + 1, (LPARAM)pBuf);
@@ -478,4 +477,31 @@ void COpenholoRefAppDlg::report(char *szMsg)
 		delete[] pBuf;
 	}
 #endif
+}
+
+
+CString COpenholoRefAppDlg::GetFileName()
+{
+	CString szFileName;
+
+	int sel = m_Tab.GetCurSel();
+	switch (sel)
+	{
+	case 0:
+		szFileName.Format(L"PointCloud_");
+		break;
+	case 1:
+		szFileName.Format(L"DepthMap_");
+		break;
+	case 2:
+		szFileName.Format(L"LightField_");
+		break;
+	case 3:
+		szFileName.Format(L"TriMesh_");
+		break;
+	case 4:
+		szFileName.Format(L"WRP_");
+		break;
+	}
+	return szFileName;
 }

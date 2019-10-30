@@ -39,6 +39,8 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
+	CString GetEncodeName();
+
 	ophWRP	*m_pWRP;
 	bool	m_bConfig;
 	bool	m_bPC;

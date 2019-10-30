@@ -44,6 +44,8 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
+	CString GetEncodeName();
+
 	ophPointCloud *m_pPointCloud;
 
 	bool	m_bConfig;

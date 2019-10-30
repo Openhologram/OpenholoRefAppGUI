@@ -55,6 +55,7 @@ public:
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
 	BOOL IsGeforceGPU();
 	void report(char *szMsg);
+	CString GetFileName();
 
 	CImage		m_imgOPH_LOGO, m_imgKETI_LOGO;
 	CRect		m_rcOPH, m_rcKETI;

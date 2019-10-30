@@ -45,6 +45,7 @@ public:
 	BOOL AutoTest();
 #endif
 	void InitUI();
+	CString GetEncodeName();
 
 	ophDepthMap*	m_pDepthMap;
 	CString			m_szPath;

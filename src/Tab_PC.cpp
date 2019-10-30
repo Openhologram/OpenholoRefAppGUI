@@ -264,10 +264,8 @@ void CTab_PC::OnBnClickedViewPc()
 
 		wsprintf(argParam, L"%d %s", pc_flag, szArgParam.GetBuffer());
 
-		auto a = (int)::ShellExecute(NULL, _T("open"),
-			path,																								//실행 파일 경로
-			argParam,																							//argument value 파라미터
-			NULL, SW_SHOW);
+
+		::ShellExecute(NULL, _T("open"), path, argParam, NULL, SW_SHOW);
 	}
 	else {
 		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
@@ -280,9 +278,12 @@ UINT CallFunc(void* param)
 	((ophPointCloud *)pParam->pGEN)->generateHologram(pParam->flag);
 	pParam->pDialog->m_bFinished = TRUE;
 
-	Complex<Real> **pp = ((ophPointCloud *)pParam->pGEN)->getComplexField();
+	ophPointCloud *pPC = ((ophPointCloud *)pParam->pGEN);
+	Complex<Real> **pp = pPC->getComplexField();
+
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-	printf("=> Complex Field[0] = %.16lf / %.16lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	for (uint i = 0; i < pPC->getContext().waveNum; i++)
+		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -394,8 +395,17 @@ void CTab_PC::OnBnClickedSaveBmp_PC()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
+
+	CString szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
+	szFileName.AppendFormat(L"%dch_", m_pPointCloud->getContext().waveNum);
+	szFileName.AppendFormat(L"%dx%d_", m_pPointCloud->getContext().pixel_number[_X], m_pPointCloud->getContext().pixel_number[_Y]);
+	szFileName.AppendFormat(L"v%d_", m_pPointCloud->getNumberOfPoints());
+	szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+	szFileName.AppendFormat(L"%s_", m_idxDiff == 0 ? L"RS" : L"Fresnel");
+	szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
+	szFileName.AppendFormat(L"%s", GetEncodeName());
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"PointCloud"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -461,6 +471,22 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pPointCloud->saveAsOhc(mulpath)) {
+	}
+}
+
+CString CTab_PC::GetEncodeName()
+{
+	switch (m_idxEncode)
+	{
+	case 0: return L"Phase";
+	case 1: return L"Amplitude";
+	case 2: return L"Real";
+	case 3: return L"SimpleNI";
+	case 4: return L"Burckhardt";
+	case 5: return L"TwoPhase";
+	case 6: return L"SSB";
+	case 7: return L"OffSSB";
+	default: return L"Unknown";
 	}
 }
 

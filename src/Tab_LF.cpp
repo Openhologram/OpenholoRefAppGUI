@@ -159,7 +159,7 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 	if (strcmp(mulpath, "") == 0) return;
 
-	if (!m_pLightField->readLFConfig(mulpath)) {
+	if (!m_pLightField->readConfig(mulpath)) {
 		AfxMessageBox(L"it is not xml config file for LightField.");
 		return;
 	}
@@ -231,10 +231,7 @@ void CTab_LF::OnBnClickedViewLf()
 
 		wsprintf(argParam, L"%d %s", mesh_flag, szArgParam.GetBuffer());
 
-		auto a = (int)::ShellExecute(NULL, _T("open"),
-			path,																								//실행 파일 경로
-			argParam,																							//argument value 파라미터
-			NULL, SW_SHOW);
+		::ShellExecute(NULL, _T("open"), path, argParam, NULL, SW_SHOW);
 	}
 	else {
 		AfxMessageBox(localPath + L"을(를) 찾을 수 없습니다.");
@@ -248,9 +245,12 @@ UINT CallFuncLF(void* param)
 	((ophLF*)pParam->pGEN)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	Complex<Real> **pp = ((ophLF *)pParam->pGEN)->getComplexField();
+	ophLF *pLF = ((ophLF *)pParam->pGEN);
+	Complex<Real> **pp = pLF->getComplexField();
+
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-	printf("=> Complex Field[0] = %.16lf / %.16lf\n", (*pp)[0][_RE], (*pp)[0][_IM]);
+	for (uint i = 0; i < pLF->getContext().waveNum; i++)
+		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -321,7 +321,7 @@ void CTab_LF::OnBnClickedEncodingLf()
 {
 	// TODO: Add your control notification handler code here
 	auto dist = m_pLightField->getDistRS2Holo();
-	m_pLightField->waveCarry(0, 0.1, dist);
+	//m_pLightField->waveCarry(0, 0.1, dist);
 	switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
 	case ophGen::ENCODE_PHASE:
 	case ophGen::ENCODE_AMPLITUDE:
@@ -349,9 +349,15 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
+	CString szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
+	szFileName.AppendFormat(L"%dch_", m_pLightField->getContext().waveNum);
+	szFileName.AppendFormat(L"%dx%d_", m_pLightField->getContext().pixel_number[_X], m_pLightField->getContext().pixel_number[_Y]);
+	szFileName.AppendFormat(L"%dx%d_", m_pLightField->getNumImage()[_X], m_pLightField->getNumImage()[_Y]);
+	szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+	szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
+	szFileName.AppendFormat(L"%s", GetEncodeName());
 	
-	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"LightField"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -416,6 +422,22 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pLightField->saveAsOhc(mulpath)) {
+	}
+}
+
+CString CTab_LF::GetEncodeName()
+{
+	switch (m_idxEncode)
+	{
+	case 0: return L"Phase";
+	case 1: return L"Amplitude";
+	case 2: return L"Real";
+	case 3: return L"SimpleNI";
+	case 4: return L"Burckhardt";
+	case 5: return L"TwoPhase";
+	case 6: return L"SSB";
+	case 7: return L"OffSSB";
+	default: return L"Unknown";
 	}
 }
 

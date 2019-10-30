@@ -197,7 +197,7 @@ void Dialog_BMP_Viewer::OnBnClickedPrev()
 {
 	// TODO: Add your control notification handler code here
 	if (m_image.size() == 1) return;
-	if (m_curImageIdx == 0) m_curImageIdx = m_image.size() - 1;
+	if (m_curImageIdx == 0) m_curImageIdx = (UINT)m_image.size() - 1;
 	else m_curImageIdx--;
 	auto pCombo = (CComboBox*)GetDlgItem(IDC_COMBO_IMAGE);
 	pCombo->SetCurSel(m_curImageIdx);
