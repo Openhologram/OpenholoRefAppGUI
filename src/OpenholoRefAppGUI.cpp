@@ -62,6 +62,8 @@ BOOL COpenholoRefApp::InitInstance()
 	}
 	ReleaseMutex(hMutex);
 
+	
+
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	INITCOMMONCONTROLSEX InitCtrls;
 	InitCtrls.dwSize = sizeof(InitCtrls);

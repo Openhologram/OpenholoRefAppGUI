@@ -284,8 +284,7 @@ void CTab_MESH::OnBnClickedViewMesh()
 UINT CallFuncMESH(void* param)
 {
 	parammeter *pParam = (parammeter *)param;	
-	((ophTri*)pParam->pGEN)->objScaleShift();
-	((ophTri*)pParam->pGEN)->generateMeshHologram(((ophTri*)pParam->pGEN)->SHADING_FLAT);
+	((ophTri*)pParam->pGEN)->generateHologram(((ophTri*)pParam->pGEN)->SHADING_FLAT);
 	pParam->pDialog->m_bFinished = TRUE;
 
 	ophTri *pMesh = ((ophTri *)pParam->pGEN);
