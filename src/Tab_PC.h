@@ -44,8 +44,10 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
-	CString GetEncodeName();
-
+	void GetEncodeName(CString &szEncode);
+	void MakeFileName(CString szAppend = L"");
+	CString m_szFileName;
+	CString m_szEncodeName;
 	ophPointCloud *m_pPointCloud;
 
 	bool	m_bConfig;

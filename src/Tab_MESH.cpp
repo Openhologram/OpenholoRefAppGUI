@@ -363,6 +363,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 	char szMsg[256] = { 0, };
 	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pMesh->getElapsedTime());
 	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
+	MakeFileName();
 }
 
 
@@ -388,6 +389,8 @@ void CTab_MESH::OnBnClickedEncodingMesh()
 	m_pMesh->normalizeEncoded();
 
 	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(TRUE);
+
+	GetEncodeName(m_szEncodeName);
 }
 
 
@@ -399,14 +402,8 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	CString szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
-	szFileName.AppendFormat(L"%dch_", m_pMesh->getContext().waveNum);
-	szFileName.AppendFormat(L"%dx%d_", m_pMesh->getContext().pixel_number[_X], m_pMesh->getContext().pixel_number[_Y]);
-	szFileName.AppendFormat(L"f%d_", m_pMesh->getNumMesh());
-	szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
-	szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
-	szFileName.AppendFormat(L"%s", GetEncodeName());
-
+	CString szFileName = m_szFileName;
+	szFileName.AppendFormat(L"%s", m_szEncodeName);
 	
 	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
@@ -454,7 +451,7 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
 
-	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"TriMesh"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -477,19 +474,19 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 	}
 }
 
-CString CTab_MESH::GetEncodeName()
+void CTab_MESH::GetEncodeName(CString &szEncode)
 {
 	switch (m_idxEncode)
 	{
-	case 0: return L"Phase";
-	case 1: return L"Amplitude";
-	case 2: return L"Real";
-	case 3: return L"SimpleNI";
-	case 4: return L"Burckhardt";
-	case 5: return L"TwoPhase";
-	case 6: return L"SSB";
-	case 7: return L"OffSSB";
-	default: return L"Unknown";
+	case 0: szEncode = L"Phase"; break;
+	case 1: szEncode = L"Amplitude"; break;
+	case 2: szEncode = L"Real"; break;
+	case 3: szEncode = L"SimpleNI"; break;
+	case 4: szEncode = L"Burckhardt"; break;
+	case 5: szEncode = L"TwoPhase"; break;
+	case 6: szEncode = L"SSB"; break;
+	case 7: szEncode = L"OffSSB"; break;
+	default: szEncode = L"Unknown"; break;
 	}
 }
 
@@ -530,4 +527,18 @@ void CTab_MESH::OnCbnSelchangeEncodeMethodMesh()
 	UpdateData(TRUE);
 
 	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->GetCurSel();
+}
+
+void CTab_MESH::MakeFileName(CString szAppend)
+{
+	if (szAppend.IsEmpty()) {
+		m_szFileName.Empty();
+	}
+
+	m_szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
+	m_szFileName.AppendFormat(L"%dch_", m_pMesh->getContext().waveNum);
+	m_szFileName.AppendFormat(L"%dx%d_", m_pMesh->getContext().pixel_number[_X], m_pMesh->getContext().pixel_number[_Y]);
+	m_szFileName.AppendFormat(L"f%d_", m_pMesh->getNumMesh());
+	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
 }

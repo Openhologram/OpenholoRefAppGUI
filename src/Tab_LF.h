@@ -40,8 +40,10 @@ public:
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
-	CString GetEncodeName();
-
+	void GetEncodeName(CString &szEncode);
+	void MakeFileName(CString szAppend = L"");
+	CString m_szFileName;
+	CString m_szEncodeName;
 	ophLF			*m_pLightField;
 	bool			m_bConfig;
 	bool			m_bDir;

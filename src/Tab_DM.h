@@ -45,8 +45,10 @@ public:
 	BOOL AutoTest();
 #endif
 	void InitUI();
-	CString GetEncodeName();
-
+	void GetEncodeName(CString &szEncode);
+	void MakeFileName(CString szAppend = L"");
+	CString m_szFileName;
+	CString m_szEncodeName;
 	ophDepthMap*	m_pDepthMap;
 	CString			m_szPath;
 	CString			m_szDname;

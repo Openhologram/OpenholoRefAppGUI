@@ -463,6 +463,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 
 	//UpdateData(FALSE);
+	MakeFileName();
 }
 
 void CTab_DM::OnBnClickedEncodingDm()
@@ -496,6 +497,22 @@ void CTab_DM::OnBnClickedEncodingDm()
 	}
 
 	m_buttonSaveBmp.EnableWindow(TRUE);
+	GetEncodeName(m_szEncodeName);
+}
+
+void CTab_DM::MakeFileName(CString szAppend)
+{
+	if (szAppend.IsEmpty()) {
+		m_szFileName.Empty();
+	}
+
+	m_szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
+	m_szFileName.AppendFormat(L"%dch_", m_pDepthMap->getContext().waveNum);
+	m_szFileName.AppendFormat(L"%dx%d_", m_pDepthMap->getContext().pixel_number[_X], m_pDepthMap->getContext().pixel_number[_Y]);
+	m_szFileName.AppendFormat(L"d%d_", m_pDepthMap->getNumOfDepth());
+	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+	m_szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"None" : L"AS");
+	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
 }
 
 void CTab_DM::OnBnClickedSaveBmp_DM()
@@ -506,14 +523,8 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
-	CString szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
-	szFileName.AppendFormat(L"%dch_", m_pDepthMap->getContext().waveNum);
-	szFileName.AppendFormat(L"%dx%d_", m_pDepthMap->getContext().pixel_number[_X], m_pDepthMap->getContext().pixel_number[_Y]);
-	szFileName.AppendFormat(L"d%d_", m_pDepthMap->getNumOfDepth());
-	szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
-	szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"None" : L"AS");
-	szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
-	szFileName.AppendFormat(L"%s", GetEncodeName());
+	CString szFileName = m_szFileName;
+	szFileName.AppendFormat(L"%s", m_szEncodeName);
 
 	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
@@ -559,8 +570,8 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	GetCurrentDirectory(MAX_PATH, current_path);
 
 	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
-	
-	CFileDialog FileDialog(FALSE, NULL, Time::getInstance()->GetTime(L"DepthMap"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+
+	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
@@ -582,20 +593,20 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 	}
 }
 
-CString CTab_DM::GetEncodeName()
+void CTab_DM::GetEncodeName(CString &szEncode)
 {
 	switch (m_idxEncode)
 	{
-	case 0: return L"Phase";
-	case 1: return L"Amplitude";
-	case 2: return L"Real";
-	case 3: return L"SimpleNI";
-	case 4: return L"Burckhardt";
-	case 5: return L"TwoPhase";
-	case 6: return L"SSB";
-	case 7: return L"OffSSB";
-	case 8: return L"Symmetrization";
-	default: return L"Unknown";
+	case 0: szEncode = L"Phase"; break;
+	case 1: szEncode = L"Amplitude"; break;
+	case 2: szEncode = L"Real"; break;
+	case 3: szEncode = L"SimpleNI"; break;
+	case 4: szEncode = L"Burckhardt"; break;
+	case 5: szEncode = L"TwoPhase"; break;
+	case 6: szEncode = L"SSB"; break;
+	case 7: szEncode = L"OffSSB"; break;
+	case 8: szEncode = L"Symmetrization"; break;
+	default: szEncode = L"Unknown"; break;
 	}
 }
 
