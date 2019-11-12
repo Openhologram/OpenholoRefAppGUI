@@ -36,7 +36,7 @@ CTab_DM::CTab_DM(CWnd* pParent /*=NULL*/)
 	, m_argParamRGBimg()
 	, m_resultPath()
 	, m_idxEncode(6)
-	, m_idxPropagation(1)
+	, m_idxPropagation(0)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
 #endif
@@ -427,7 +427,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	}
 	m_pDepthMap->setMode(!m_buttonGPU.GetCheck());
 	m_pDepthMap->setViewingWindow(m_buttonViewingWindow.GetCheck());
-	m_pDepthMap->setPropagationMethod(m_idxPropagation);
 
 	ivec2 rgbImg = m_pDepthMap->getRGBImgSize();
 	ivec2 depthImg = m_pDepthMap->getDepthImgSize();
@@ -627,9 +626,7 @@ BOOL CTab_DM::OnInitDialog()
 
 	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->SetCurSel(m_idxEncode);
 
-	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->AddString(L"None");
 	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->AddString(L"Angular Spectrum");
-
 	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->SetCurSel(m_idxPropagation);
 
 	// GeForce GPU 일 때만, 활성화
@@ -662,8 +659,6 @@ void CTab_DM::OnCbnSelchangePropagationMethodDm()
 	UpdateData(TRUE);
 	m_idxPropagation = ((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->GetCurSel();
 }
-
-
 
 bool CTab_DM::CheckConfig()
 {

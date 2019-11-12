@@ -338,7 +338,7 @@ void CTab_MESH::OnBnClickedGenerateMesh()
 
 	context.wave_length[0] = m_wavelength;
 
-	//m_pMesh->setMode(!m_buttonGPU.GetCheck());
+	m_pMesh->setMode(!m_buttonGPU.GetCheck());
 	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
 
