@@ -46,11 +46,13 @@ protected:
 	afx_msg void OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnBnClickedLogCheck();
+	afx_msg void OnBnClickedAlwaysCheck();
 	DECLARE_MESSAGE_MAP()
 
 	void initTabs(void);
 
 public:
+	void OpenExplorer(CString szPath);
 	void ForegroundConsole();
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
 	BOOL IsGeforceGPU();
@@ -74,4 +76,7 @@ public:
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
 	CButton		m_buttonLog;
+	CButton		m_buttonExplorer;
+	// 항상 위에 표시
+	CButton m_buttonAlways;
 };

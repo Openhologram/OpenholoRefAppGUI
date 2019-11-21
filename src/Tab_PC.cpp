@@ -283,7 +283,7 @@ UINT CallFunc(void* param)
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for (uint i = 0; i < pPC->getContext().waveNum; i++)
-		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
+		printf("=> Complex Field[%d][0] = %.15e / %.15e\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -345,6 +345,10 @@ void CTab_PC::OnBnClickedGenerate_PC()
 	pParam->pGEN = m_pPointCloud;
 	pParam->flag = m_idxDiff;
 	pParam->pDialog = &progress;
+
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pPointCloud->getPercent();
+	
 	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
 	progress.DoModal();
 	progress.DestroyWindow();
@@ -438,6 +442,8 @@ void CTab_PC::OnBnClickedSaveBmp_PC()
 	m_pPointCloud->save(mulpath, 8, nullptr, size[_X], size[_Y]);
 
 	GetDlgItem(IDC_VIEW_PC_BMP)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 }
 
 
@@ -480,6 +486,7 @@ void CTab_PC::OnBnClickedSaveOhc_PC()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pPointCloud->saveAsOhc(mulpath)) {
+		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 	}
 }
 

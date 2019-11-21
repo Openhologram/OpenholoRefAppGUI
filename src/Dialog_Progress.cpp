@@ -15,12 +15,15 @@ Dialog_Progress::Dialog_Progress(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DIALOG_PROGRESS, pParent)
 	, m_bFinished(FALSE)
 	, m_iProgress(0)
+	, m_iPercent(nullptr)
+	, m_bPercent(false)
 {
-
 }
 
 Dialog_Progress::~Dialog_Progress()
 {
+	m_iPercent = nullptr;
+	m_font.DeleteObject();
 }
 
 void Dialog_Progress::DoDataExchange(CDataExchange* pDX)
@@ -44,18 +47,25 @@ UINT CallFunction(LPVOID lParam) {
 	Dialog_Progress *dlg = (Dialog_Progress*)lParam;
 
 	if (!dlg) return 0;
-	CString szMsg = L"HOLOGRAM GENERATING";
+	CString szMsg = L"GENERATING";
 	while (!dlg->m_bFinished) {
-		dlg->m_iProgress++;
-		if (dlg->m_iProgress <= 5) {
-			szMsg.AppendChar('.');
+		if (dlg->m_bPercent) {
+			szMsg.Format(L"%d (%%)", *dlg->m_iPercent);
 			dlg->SetDlgItemTextW(IDC_TEXT_GEN, szMsg);
+			Sleep(100);
 		}
 		else {
-			szMsg = L"HOLOGRAM GENERATING";
-			dlg->m_iProgress = 0;
+			dlg->m_iProgress++;
+			if (dlg->m_iProgress <= 5) {
+				szMsg.AppendChar('.');
+			}
+			else {
+				szMsg = L"GENERATING";
+				dlg->m_iProgress = 0;
+			}
+			dlg->SetDlgItemTextW(IDC_TEXT_GEN, szMsg);
+			Sleep(500);
 		}
-		Sleep(500);
 	}
 
 	::SendMessage(dlg->GetSafeHwnd(), WM_CLOSE, NULL, NULL);
@@ -66,6 +76,9 @@ UINT CallFunction(LPVOID lParam) {
 BOOL Dialog_Progress::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
+	m_font.CreatePointFont(180, L"±¼¸²");
+	GetDlgItem(IDC_TEXT_GEN)->SetFont(&m_font, TRUE);
+
 
 	CWinThread *pThread = nullptr;
 	pThread = AfxBeginThread(CallFunction, this);

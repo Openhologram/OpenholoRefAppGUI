@@ -250,7 +250,7 @@ UINT CallFuncLF(void* param)
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for (uint i = 0; i < pLF->getContext().waveNum; i++)
-		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
+		printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -378,6 +378,8 @@ void CTab_LF::OnBnClickedSaveBmp_LF()
 	m_pLightField->save(mulpath, 8, nullptr, encodeSize[_X], encodeSize[_Y]);
 
 	GetDlgItem(IDC_VIEW_LF_BMP)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 }
 
 void CTab_LF::OnBnClickedViewLfBmp()
@@ -419,6 +421,8 @@ void CTab_LF::OnBnClickedSaveOhc_LF()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pLightField->saveAsOhc(mulpath)) {
+
+		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 	}
 }
 

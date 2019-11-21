@@ -290,7 +290,7 @@ UINT CallFuncWRP(void* param)
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for (uint i = 0; i < pWRP->getContext().waveNum; i++)
-		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
+		printf("=> Complex Field[%d][0] = %.15e / %.15e\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -483,6 +483,8 @@ void CTab_WRP::OnBnClickedSaveBmpWrp()
 	m_pWRP->save(mulpath);
 
 	GetDlgItem(IDC_VIEW_WRP_BMP)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 }
 
 void CTab_WRP::OnBnClickedViewWrpBmp()
@@ -525,6 +527,7 @@ void CTab_WRP::OnBnClickedSaveOhcWrp()
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pWRP->saveAsOhc(mulpath)) {
 
+		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 	}
 }
 

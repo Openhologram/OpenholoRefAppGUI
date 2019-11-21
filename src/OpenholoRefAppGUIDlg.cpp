@@ -90,7 +90,9 @@ void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_GEN_TAB, m_Tab);
 	DDX_Control(pDX, IDC_OPH_LOGO, m_picOphLogo);
 	DDX_Control(pDX, IDC_LOG_CHECK, m_buttonLog);
+	DDX_Control(pDX, IDC_EXPLORER_CHECK, m_buttonExplorer);
 	DDX_Control(pDX, IDC_KETI_LOGO, m_picKetiLogo);
+	DDX_Control(pDX, IDC_ALWAYS_CHECK, m_buttonAlways);
 }
 
 BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
@@ -104,6 +106,7 @@ BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
 	ON_WM_SETCURSOR()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
+	ON_BN_CLICKED(IDC_ALWAYS_CHECK, &COpenholoRefAppDlg::OnBnClickedAlwaysCheck)
 END_MESSAGE_MAP()
 
 
@@ -154,6 +157,7 @@ BOOL COpenholoRefAppDlg::OnInitDialog()
 
 	// TODO: Add extra initialization here
 	CheckDlgButton(IDC_LOG_CHECK, TRUE);
+	CheckDlgButton(IDC_EXPLORER_CHECK, TRUE);
 
 	
 	m_imgOPH_LOGO.Load(_T("res/OpenHolo_logo.png"));
@@ -504,4 +508,19 @@ CString COpenholoRefAppDlg::GetFileName()
 		break;
 	}
 	return szFileName;
+}
+
+void COpenholoRefAppDlg::OpenExplorer(CString szPath)
+{
+	if (m_buttonExplorer.GetCheck() && !szPath.IsEmpty()) {
+		ShellExecute(NULL, L"open", L"explorer", L"/select, " + szPath, NULL, SW_SHOW);
+	}
+}
+
+void COpenholoRefAppDlg::OnBnClickedAlwaysCheck()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	::SetWindowPos(m_hWnd, m_buttonAlways.GetCheck() ? 
+		HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, 
+		SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 }

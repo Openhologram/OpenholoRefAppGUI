@@ -292,7 +292,7 @@ UINT CallFuncMESH(void* param)
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for (uint i = 0; i < pMesh->getContext().waveNum; i++)
-		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
+		printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -428,6 +428,8 @@ void CTab_MESH::OnBnClickedSaveBmpMesh()
 	m_pMesh->save(mulpath, 8, nullptr, encode_size[_X], encode_size[_Y]);
 
 	GetDlgItem(IDC_VIEW_MESH_BMP)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 }
 
 
@@ -471,6 +473,10 @@ void CTab_MESH::OnBnClickedSaveOhcMesh()
 	if (strcmp(mulpath, "") == 0) return;
 	if (!m_pMesh->saveAsOhc(mulpath)) {
 		MessageBox(L"Save failed", L"Error", MB_ICONWARNING);
+	}
+	else {
+
+		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 	}
 }
 

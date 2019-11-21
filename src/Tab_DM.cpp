@@ -376,7 +376,7 @@ UINT CallFuncDM(void* param)
 	
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for(uint i=0;i< pDepth->getContext().waveNum;i++)
-		printf("=> Complex Field[%d][0] = %lf / %lf\n", i, pp[i][0][_RE], pp[i][0][_IM]);
+		printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -452,6 +452,8 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	parammeter *pParam = new parammeter;
 	pParam->pGEN = m_pDepthMap;
 	pParam->pDialog = &progress;
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pDepthMap->getPercent();
 
 	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
 	progress.DoModal();
@@ -510,7 +512,7 @@ void CTab_DM::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%dx%d_", m_pDepthMap->getContext().pixel_number[_X], m_pDepthMap->getContext().pixel_number[_Y]);
 	m_szFileName.AppendFormat(L"d%d_", m_pDepthMap->getNumOfDepth());
 	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
-	m_szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"None" : L"AS");
+	m_szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"AS" : L"Unknown");
 	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
 }
 
@@ -548,6 +550,8 @@ void CTab_DM::OnBnClickedSaveBmp_DM()
 	m_pDepthMap->save(mulpath, 8, nullptr, size[_X], size[_Y]);
 
 	GetDlgItem(IDC_VIEW_DM_BMP)->EnableWindow(TRUE);
+
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 }
 
 void CTab_DM::OnBnClickedViewDmBmp()
@@ -589,6 +593,8 @@ void CTab_DM::OnBnClickedSaveOhc_DM()
 
 	if (strcmp(mulpath, "") == 0) return;
 	if (m_pDepthMap->saveAsOhc(mulpath)) {
+
+		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
 	}
 }
 

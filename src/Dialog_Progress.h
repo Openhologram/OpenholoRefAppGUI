@@ -29,7 +29,10 @@ public:
 	//CProgressCtrl m_progress;
 	HANDLE m_thread;
 	BOOL	m_bFinished;
+	UINT	*m_iPercent;
 	UINT	m_iProgress;
+	bool	m_bPercent;
+	CFont m_font;
 
 	virtual BOOL DestroyWindow();
 };
