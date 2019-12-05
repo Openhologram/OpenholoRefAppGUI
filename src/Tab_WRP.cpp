@@ -399,7 +399,7 @@ void CTab_WRP::OnBnClickedEncodingWrp()
 		break;
 	}
 
-	m_pWRP->normalizeEncoded();
+	m_pWRP->normalize();
 
 	GetDlgItem(IDC_SAVE_BMP_WRP)->EnableWindow(TRUE);
 	GetEncodeName(m_szEncodeName);

@@ -494,7 +494,7 @@ void CTab_DM::OnBnClickedEncodingDm()
 		case ophGen::ENCODE_SYMMETRIZATION:
 			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 		}
-		m_pDepthMap->normalizeEncoded();
+		m_pDepthMap->normalize();
 	}
 
 	m_buttonSaveBmp.EnableWindow(TRUE);

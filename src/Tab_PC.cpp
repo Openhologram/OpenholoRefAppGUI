@@ -400,7 +400,7 @@ void CTab_PC::OnBnClickedEncodingPc()
 			m_pPointCloud->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
 			break;
 		}
-		m_pPointCloud->normalizeEncoded();
+		m_pPointCloud->normalize();
 	}
 
 	m_buttonSaveBmp.EnableWindow(TRUE);

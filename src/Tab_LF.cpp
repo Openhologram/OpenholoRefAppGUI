@@ -337,7 +337,7 @@ void CTab_LF::OnBnClickedEncodingLf()
 		m_pLightField->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
 		break;
 	}
-	m_pLightField->normalizeEncoded();
+	m_pLightField->normalize();
 
 	m_buttonSaveBmp.EnableWindow(TRUE);
 	GetEncodeName(m_szEncodeName);

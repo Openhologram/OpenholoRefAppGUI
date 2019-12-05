@@ -386,7 +386,7 @@ void CTab_MESH::OnBnClickedEncodingMesh()
 		m_pMesh->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
 		break;
 	}
-	m_pMesh->normalizeEncoded();
+	m_pMesh->normalize();
 
 	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(TRUE);
 
