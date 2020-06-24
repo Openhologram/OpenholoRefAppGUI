@@ -29,19 +29,18 @@ public:
 	afx_msg void OnBnClickedReadConfig_LF();
 	afx_msg void OnBnClickedFindDir();
 	afx_msg void OnBnClickedViewLf();
-	afx_msg void OnBnClickedGenerate_LF();
-	afx_msg void OnBnClickedEncodingLf();
-	afx_msg void OnBnClickedSaveBmp_LF();
+	void SaveIMG();
 	afx_msg void OnBnClickedViewLfBmp();
-	afx_msg void OnBnClickedSaveOhc_LF();
+	void SaveOHC();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg void OnCbnSelchangeEncodeMethodLf();
+	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
+	ophLF* GetInstance() { return m_pLightField; }
 	CString m_szFileName;
 	CString m_szEncodeName;
 	ophLF			*m_pLightField;
@@ -51,23 +50,10 @@ public:
 	TCHAR			m_argParam[MAX_PATH];
 	TCHAR			m_resultPath[MAX_PATH];
 
-	int				m_idxEncode;
-
-	double	m_fieldLens;
 	double	m_distance;
 	int		m_numimgX;
 	int		m_numimgY;
-	double	m_pixelpitchX;
-	double	m_pixelpitchY;
-	int		m_pixelnumX;
-	int		m_pixelnumY;
-	double	m_wavelength;
 
-	CButton m_buttonGenerate;
-	CButton m_buttonSaveBmp;
-	CButton m_buttonSaveOhc;
-	CButton m_buttonGPU;
-	CButton m_buttonViewingWindow;
 #ifdef TEST_MODE
 		BOOL m_bTest;
 #endif

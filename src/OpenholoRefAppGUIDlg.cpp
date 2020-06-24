@@ -7,6 +7,7 @@
 #include "OpenholoRefAppGUIDlg.h"
 #include "afxdialogex.h"
 #include <d3d9.h>
+#include "ophGen.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -17,6 +18,10 @@
 #include "Tab_LF.h"
 #include "Tab_MESH.h"
 #include "Tab_WRP.h"
+#include "Tab_IFTA.h"
+#include "Dialog_BMP_Viewer.h"
+#include "Dialog_Progress.h"
+#include "Dialog_Prompt.h"
 
 // CAboutDlg dialog used for App About
 
@@ -79,9 +84,21 @@ BOOL COpenholoRefAppDlg::IsGeforceGPU()
 
 COpenholoRefAppDlg::COpenholoRefAppDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_OPENHOLOREFAPPGUI_DIALOG, pParent)
+	, m_shiftX(0)
+	, m_shiftY(0)
+	, m_shiftZ(0)
+	, m_rotate(0)
+	, m_flip(0)
+	, m_pixelpitchX(0)
+	, m_pixelpitchY(0)
+	, m_pixelnumX(0)
+	, m_pixelnumY(0)
+	, m_iEncode(0)
+	, m_nWave(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_bClickOPH = FALSE;
+	m_wavelength[0] = m_wavelength[1] = m_wavelength[2] = 0.0;
 }
 
 void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
@@ -93,6 +110,24 @@ void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EXPLORER_CHECK, m_buttonExplorer);
 	DDX_Control(pDX, IDC_KETI_LOGO, m_picKetiLogo);
 	DDX_Control(pDX, IDC_ALWAYS_CHECK, m_buttonAlways);
+	DDX_Control(pDX, IDC_GENERATE, m_buttonGenerate);
+	DDX_Control(pDX, IDC_SAVE_IMG, m_buttonSaveBmp);
+	DDX_Control(pDX, IDC_SAVE_OHC, m_buttonSaveOhc);
+	DDX_Control(pDX, IDC_ENCODING, m_buttonEncode);
+	DDX_Control(pDX, IDC_GPU_CHECK, m_buttonGPU);
+	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Text(pDX, IDC_SHIFT_X, m_shiftX);
+	DDX_Text(pDX, IDC_SHIFT_Y, m_shiftY);
+	DDX_Text(pDX, IDC_SHIFT_Z, m_shiftZ);
+	DDX_Text(pDX, IDC_PIXEL_PITCH_X, m_pixelpitchX);
+	DDX_Text(pDX, IDC_PIXEL_PITCH_Y, m_pixelpitchY);
+	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
+	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
+	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength[0]);
+	DDX_Text(pDX, IDC_WAVE_LENGTH2, m_wavelength[1]);
+	DDX_Text(pDX, IDC_WAVE_LENGTH3, m_wavelength[2]);
+	DDX_Control(pDX, IDC_ENCODE_METHOD, m_encodeMethod);
+	DDX_Control(pDX, IDC_VIEW_IMG, m_buttonViewImg);
 }
 
 BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
@@ -107,6 +142,17 @@ BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
 	ON_BN_CLICKED(IDC_ALWAYS_CHECK, &COpenholoRefAppDlg::OnBnClickedAlwaysCheck)
+	ON_BN_CLICKED(IDC_BUTTON_EXPAND, &COpenholoRefAppDlg::OnBnClickedButtonExpand)
+	ON_WM_MOVING()
+	ON_MESSAGE(FLIP_APPLY, &COpenholoRefAppDlg::OnFlip)
+	ON_MESSAGE(ROTATE_APPLY, &COpenholoRefAppDlg::OnRotate)
+	ON_MESSAGE(LOAD_CFG, &COpenholoRefAppDlg::OnReceive)
+	ON_MESSAGE(LOAD_DATA, &COpenholoRefAppDlg::OnReceive)
+	ON_BN_CLICKED(IDC_GENERATE, &COpenholoRefAppDlg::OnBnClickedGenerate)
+	ON_BN_CLICKED(IDC_SAVE_IMG, &COpenholoRefAppDlg::OnBnClickedSaveImg)
+	ON_BN_CLICKED(IDC_ENCODING, &COpenholoRefAppDlg::OnBnClickedEncoding)
+	ON_BN_CLICKED(IDC_SAVE_OHC, &COpenholoRefAppDlg::OnBnClickedSaveOhc)
+	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD, &COpenholoRefAppDlg::OnCbnSelchangeEncodeMethod)
 END_MESSAGE_MAP()
 
 
@@ -164,9 +210,33 @@ BOOL COpenholoRefAppDlg::OnInitDialog()
 	m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
 	GetDlgItem(IDC_OPH_LOGO)->SetWindowPos(NULL, 0, 0, m_imgOPH_LOGO.GetWidth(), m_imgOPH_LOGO.GetHeight(), SWP_NOMOVE);
 	GetDlgItem(IDC_KETI_LOGO)->SetWindowPos(NULL, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight(), SWP_NOMOVE);
-
+	m_option = new Option();
+	m_option->Create(IDD_DLG_OPTION);
 	initTabs();
+	
+	initUI();
+	GetDlgItem(IDC_GPU_CHECK)->EnableWindow(IsGeforceGPU());
+	CWnd *pConsole = CWnd::FromHandle(GetConsoleWindow());
+	if(pConsole) {
+		EnableMenuItem(::GetSystemMenu(pConsole->m_hWnd, FALSE), SC_CLOSE, MF_DISABLED);
+		pConsole->DrawMenuBar();
+	}
 	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+void COpenholoRefAppDlg::initUI()
+{
+	m_encodeMethod.Clear();
+	m_encodeMethod.AddString(L"Phase");
+	m_encodeMethod.AddString(L"Amplitude");
+	m_encodeMethod.AddString(L"Real");
+	m_encodeMethod.AddString(L"Simple NI");
+	m_encodeMethod.AddString(L"Burckhardt");
+	m_encodeMethod.AddString(L"Two-Phase");
+	m_encodeMethod.AddString(L"SSB");
+	m_encodeMethod.AddString(L"Off-SSB");
+	m_encodeMethod.AddString(L"Symmetrization");
+	m_encodeMethod.SetCurSel(m_iEncode);
 }
 
 void COpenholoRefAppDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -244,6 +314,7 @@ void COpenholoRefAppDlg::initTabs(void)
 	m_Tab.InsertItem(2, _T("Light Field"));
 	m_Tab.InsertItem(3, _T("Triangle Mesh"));
 	m_Tab.InsertItem(4, _T("WRP"));
+	m_Tab.InsertItem(5, _T("IFTA"));
 
 	m_Tab.SetCurSel(0);
 
@@ -274,6 +345,19 @@ void COpenholoRefAppDlg::initTabs(void)
 	pTabWRP->Create(IDD_DLG_WRP, &m_Tab);
 	pTabWRP->MoveWindow(0, 25, rect.Width(), rect.Height());
 	pTabWRP->ShowWindow(SW_HIDE);
+
+	pTabIFTA = new CTab_IFTA;
+	pTabIFTA->Create(IDD_DLG_IFTA, &m_Tab);
+	pTabIFTA->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabIFTA->ShowWindow(SW_HIDE);
+
+	m_vector.clear();
+	m_vector.push_back(pTabPC);
+	m_vector.push_back(pTabDM);
+	m_vector.push_back(pTabLF);
+	m_vector.push_back(pTabMESH);
+	m_vector.push_back(pTabWRP);
+	m_vector.push_back(pTabIFTA);
 }
 
 
@@ -291,6 +375,7 @@ void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 		pTabLF->ShowWindow(SW_HIDE);
 		pTabMESH->ShowWindow(SW_HIDE);
 		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_HIDE);
 		break;
 	case 1:
 		pTabPC->ShowWindow(SW_HIDE);
@@ -298,6 +383,7 @@ void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 		pTabLF->ShowWindow(SW_HIDE);
 		pTabMESH->ShowWindow(SW_HIDE);
 		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_HIDE);
 		break;
 	case 2:
 		pTabPC->ShowWindow(SW_HIDE);
@@ -305,6 +391,7 @@ void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 		pTabLF->ShowWindow(SW_SHOW);
 		pTabMESH->ShowWindow(SW_HIDE);
 		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_HIDE);
 		break;
 	case 3:
 		pTabPC->ShowWindow(SW_HIDE);
@@ -312,6 +399,7 @@ void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 		pTabLF->ShowWindow(SW_HIDE);
 		pTabMESH->ShowWindow(SW_SHOW);
 		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_HIDE);
 		break;
 	case 4:
 		pTabPC->ShowWindow(SW_HIDE);
@@ -319,6 +407,15 @@ void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 		pTabLF->ShowWindow(SW_HIDE);
 		pTabMESH->ShowWindow(SW_HIDE);
 		pTabWRP->ShowWindow(SW_SHOW);
+		pTabIFTA->ShowWindow(SW_HIDE);
+		break;
+	case 5:
+		pTabPC->ShowWindow(SW_HIDE);
+		pTabDM->ShowWindow(SW_HIDE);
+		pTabLF->ShowWindow(SW_HIDE);
+		pTabMESH->ShowWindow(SW_HIDE);
+		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_SHOW);
 		break;
 	}
 
@@ -346,7 +443,7 @@ char * COpenholoRefAppDlg::GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd)
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetPathName();
 		else path = "XML file only.";
 	}
 
@@ -387,11 +484,18 @@ void COpenholoRefAppDlg::OnClose()
 	pTabMESH->DestroyWindow();
 	pTabWRP->DestroyWindow();
 	pTabLF->DestroyWindow();
+	pTabIFTA->DestroyWindow();
 	delete pTabPC;
 	delete pTabDM;
 	delete pTabMESH;
 	delete pTabWRP;
 	delete pTabLF;
+	delete pTabIFTA;
+
+	if (m_option->GetSafeHwnd())
+		m_option->DestroyWindow();
+	if (m_option)
+		delete m_option;
 
 	CDialogEx::OnClose();
 }
@@ -506,7 +610,23 @@ CString COpenholoRefAppDlg::GetFileName()
 	case 4:
 		szFileName.Format(L"WRP_");
 		break;
+	case 5:
+		szFileName.Format(L"IFTA_");
+		break;
 	}
+	szFileName.AppendFormat(L"%dx%d_%dch_%s", 
+		m_pixelnumX, m_pixelnumY, m_nWave, m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
+
+	return szFileName;
+}
+
+CString COpenholoRefAppDlg::GetFileNameExt()
+{
+	CString szFileName = GetFileName();
+	CString szEncode;
+	m_encodeMethod.GetLBText(m_encodeMethod.GetCurSel(), szEncode);
+	szFileName.AppendFormat(L"_%s", szEncode);
+
 	return szFileName;
 }
 
@@ -523,4 +643,184 @@ void COpenholoRefAppDlg::OnBnClickedAlwaysCheck()
 	::SetWindowPos(m_hWnd, m_buttonAlways.GetCheck() ? 
 		HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, 
 		SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+}
+
+bool COpenholoRefAppDlg::SaveOHC(CString &path)
+{
+	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CFileDialog FileDialog(FALSE, NULL, GetFileName(), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(L"Result", L"OHC Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
+	if (FileDialog.DoModal() == IDOK)
+	{
+		path.Format(L"%s.ohc", FileDialog.GetPathName());
+		AfxGetApp()->WriteProfileString(L"Result", L"OHC Path", path.Left(path.ReverseFind('\\') + 1));
+		return true;
+	}
+	return false;
+}
+
+bool COpenholoRefAppDlg::SaveImage(CString &path)
+{
+	TCHAR szExtension[][5] = { L"bmp", L"jpg", L"gif", L"png", L"tif", L"bmp" };
+	LPTSTR szFilter =
+		L"BMP File (*.bmp)|*.bmp|\
+		JPEG File (*.jpg;*.jpeg)|*.jpg;*.jpeg|\
+		GIF File (*.gif)|*.gif|\
+		PNG File (*.png)|*.png|\
+		TIFF File (*.tif;*.tiff)|*.tif;*.tiff|\
+		All Files (*.*)|*.*||";
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+	CFileDialog FileDialog(FALSE, NULL, GetFileNameExt(), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(L"Result", L"Image Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
+	if (FileDialog.DoModal() == IDOK)
+	{
+		int idx = FileDialog.m_ofn.nFilterIndex;
+		if (!FileDialog.GetFileExt().Compare(szExtension[idx - 1]))
+			path.Format(L"%s\\%s",
+				FileDialog.GetFolderPath(),
+				FileDialog.GetFileName());
+		else
+			path.Format(L"%s.%s",
+			FileDialog.GetPathName(),
+			szExtension[idx - 1]);
+		AfxGetApp()->WriteProfileString(L"Result", L"Image Path", path.Left(path.ReverseFind('\\') + 1));
+		return true;
+	}
+	return false;
+}
+
+void COpenholoRefAppDlg::OnBnClickedButtonExpand()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	static bool bClicked = false;
+	if (!bClicked) {
+		MoveOptionDlg();
+		bClicked = true;
+	}
+	m_option->ShowWindow(m_option->IsWindowVisible() ? SW_HIDE : SW_SHOW);
+	GetDlgItem(IDC_BUTTON_EXPAND)->SetWindowTextW(m_option->IsWindowVisible() ? L"◀" : L"▶");
+}
+
+void COpenholoRefAppDlg::MoveOptionDlg()
+{
+	CRect rc, rcOption;
+	GetWindowRect(&rc);
+	//ScreenToClient(&rc);
+	m_option->GetWindowRect(&rcOption);
+	m_option->MoveWindow(rc.right - 15, rc.top, rcOption.Width(), rcOption.Height(), 0);
+}
+
+void COpenholoRefAppDlg::OnMoving(UINT fwSide, LPRECT pRect)
+{
+	CDialogEx::OnMoving(fwSide, pRect);
+
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	MoveOptionDlg();
+}
+
+LRESULT COpenholoRefAppDlg::OnFlip(WPARAM wParam, LPARAM lParam)
+{
+	m_flip = m_option->GetFlip();
+	return TRUE;
+}
+
+
+LRESULT COpenholoRefAppDlg::OnRotate(WPARAM wParam, LPARAM lParam)
+{
+	m_rotate = m_option->GetRotate();
+	return TRUE;
+}
+
+void COpenholoRefAppDlg::OnBnClickedGenerate()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	UpdateData(TRUE);
+
+	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
+		AfxMessageBox(L"Config value error - pixel pitch");
+		return;
+	}
+	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
+		AfxMessageBox(L"Config value error - pixel number");
+		return;
+	}
+	if (m_wavelength[0] == 0.0) {
+		AfxMessageBox(L"Config value error - wave length");
+		return;
+	}
+
+	int sel = m_Tab.GetCurSel();
+	m_vector[sel]->SendMessage(GENERATE, GENERATE, 0);
+
+	m_buttonEncode.EnableWindow(TRUE);
+	m_buttonSaveBmp.EnableWindow(FALSE);
+	m_buttonSaveOhc.EnableWindow(TRUE);
+	m_buttonViewImg.EnableWindow(FALSE);
+}
+
+
+
+void COpenholoRefAppDlg::OnBnClickedSaveImg()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	int sel = m_Tab.GetCurSel();
+	BOOL res = m_vector[sel]->SendMessage(SAVE_IMG, SAVE_IMG, 0);
+
+}
+
+
+void COpenholoRefAppDlg::OnBnClickedEncoding()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	UpdateData(FALSE);
+	int sel = m_Tab.GetCurSel();
+
+	BOOL res = m_vector[sel]->SendMessage(ENCODE, ENCODE, m_iEncode);
+	
+	m_buttonViewImg.EnableWindow(TRUE);
+	m_buttonSaveBmp.EnableWindow(TRUE);
+}
+
+
+void COpenholoRefAppDlg::OnBnClickedSaveOhc()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	int sel = m_Tab.GetCurSel();
+	m_vector[sel]->SendMessage(SAVE_OHC, SAVE_OHC, 0);
+}
+
+
+void COpenholoRefAppDlg::OnCbnSelchangeEncodeMethod()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_iEncode = m_encodeMethod.GetCurSel();
+}
+
+
+LRESULT COpenholoRefAppDlg::OnReceive(WPARAM wParam, LPARAM lParam)
+{	
+	if (wParam == LOAD_CFG) {
+		m_buttonGenerate.EnableWindow(FALSE);
+		m_buttonEncode.EnableWindow(FALSE);
+		m_buttonSaveBmp.EnableWindow(FALSE);
+		m_buttonSaveOhc.EnableWindow(FALSE);
+		m_buttonViewImg.EnableWindow(FALSE);
+		UpdateData(FALSE);
+	}
+	else if (wParam == LOAD_DATA) {
+		m_buttonGenerate.EnableWindow(TRUE);
+		m_buttonEncode.EnableWindow(FALSE);
+		m_buttonSaveBmp.EnableWindow(FALSE);
+		m_buttonSaveOhc.EnableWindow(FALSE);
+		m_buttonViewImg.EnableWindow(FALSE);
+	}
+	return TRUE;
 }

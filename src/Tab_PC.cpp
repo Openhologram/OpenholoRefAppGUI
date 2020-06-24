@@ -7,32 +7,27 @@
 #include "Tab_PC.h"
 #include "Console.h"
 #include "afxdialogex.h"
-
-
-
+#include "ophIFTA.h"
+#include "ophSimulator.h"
 // CTab_PC dialog
 
 #include <ophPointCloud.h>
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
 #include "Dialog_Prompt.h"
-
 #include "GLUTviewer.h"
+
+
+#define KEY_NAME L"PointCloud"
 
 IMPLEMENT_DYNAMIC(CTab_PC, CDialogEx)
 
 CTab_PC::CTab_PC(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_PC, pParent)
-	, m_fieldLens(0)
 	, m_scaleX(0)
 	, m_scaleY(0)
 	, m_scaleZ(0)
-	, m_offsetdepth(0)
-	, m_pixelpitchX(0)
-	, m_pixelpitchY(0)
-	, m_pixelnumX(0)
-	, m_pixelnumY(0)
-	, m_wavelength(0)
+	, m_distance(0)
 	, m_bConfig(FALSE)
 	, m_bPC(FALSE)
 	, m_bEncode(FALSE)
@@ -40,7 +35,6 @@ CTab_PC::CTab_PC(CWnd* pParent /*=NULL*/)
 	, m_argParamW()
 	, m_resultPath()
 	, m_idxDiff(0)
-	, m_idxEncode(6)
 	, m_bFinish(FALSE)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
@@ -56,41 +50,28 @@ CTab_PC::~CTab_PC()
 void CTab_PC::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
-	DDX_Text(pDX, IDC_SCALE_X, m_scaleX);
-	DDX_Text(pDX, IDC_SCALE_Y, m_scaleY);
-	DDX_Text(pDX, IDC_SCALE_Z, m_scaleZ);
-	DDX_Text(pDX, IDC_OFFSET_DEPTH, m_offsetdepth);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_X, m_pixelpitchX);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_Y, m_pixelpitchY);
-	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
-	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
-	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
-	DDX_Control(pDX, IDC_GENERATE_PC, m_buttonGenerate);
-	DDX_Control(pDX, IDC_SAVE_BMP_PC, m_buttonSaveBmp);
-	DDX_Control(pDX, IDC_SAVE_OHC_PC, m_buttonSaveOhc);
-	DDX_Control(pDX, IDC_GPU_CHECK_PC, m_buttonGPU);
-	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Text(pDX, IDC_SCALE_X_PC, m_scaleX);
+	DDX_Text(pDX, IDC_SCALE_Y_PC, m_scaleY);
+	DDX_Text(pDX, IDC_SCALE_Z_PC, m_scaleZ);
+	DDX_Text(pDX, IDC_DISTANCE_PC, m_distance);
 }
 
 
 BEGIN_MESSAGE_MAP(CTab_PC, CDialogEx)
 	ON_WM_CTLCOLOR()
 	ON_WM_SIZE()
-//	ON_WM_INITMENU()
-ON_BN_CLICKED(IDC_LOAD_PC, &CTab_PC::OnBnClickedLoadPc)
-ON_BN_CLICKED(IDC_GENERATE_PC, &CTab_PC::OnBnClickedGenerate_PC)
-ON_BN_CLICKED(IDC_SAVE_BMP_PC, &CTab_PC::OnBnClickedSaveBmp_PC)
-ON_BN_CLICKED(IDC_SAVE_OHC_PC, &CTab_PC::OnBnClickedSaveOhc_PC)
-ON_BN_CLICKED(IDC_READ_CONFIG_PC, &CTab_PC::OnBnClickedReadConfig_PC)
-ON_WM_CREATE()
-ON_WM_DESTROY()
-ON_BN_CLICKED(IDC_VIEW_PC, &CTab_PC::OnBnClickedViewPc)
-//ON_WM_KEYDOWN()
-ON_BN_CLICKED(IDC_VIEW_PC_BMP, &CTab_PC::OnBnClickedViewPcBmp)
-ON_CBN_SELCHANGE(IDC_DIFF_METHOD_PC, &CTab_PC::OnCbnSelchangeDiffMethodPc)
-ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_PC, &CTab_PC::OnCbnSelchangeEncodeMethodPc)
-ON_BN_CLICKED(IDC_ENCODING_PC, &CTab_PC::OnBnClickedEncodingPc)
+	//	ON_WM_INITMENU()
+	ON_BN_CLICKED(IDC_LOAD_PC, &CTab_PC::OnBnClickedLoadPc)
+	ON_BN_CLICKED(IDC_READ_CONFIG_PC, &CTab_PC::OnBnClickedReadConfig_PC)
+	ON_WM_CREATE()
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_VIEW_PC, &CTab_PC::OnBnClickedViewPc)
+	//ON_WM_KEYDOWN()
+	ON_CBN_SELCHANGE(IDC_DIFF_METHOD_PC, &CTab_PC::OnCbnSelchangeDiffMethodPc)
+	ON_MESSAGE(GENERATE, &CTab_PC::OnMsg)
+	ON_MESSAGE(ENCODE, &CTab_PC::OnMsg)
+	ON_MESSAGE(SAVE_IMG, &CTab_PC::OnMsg)
+	ON_MESSAGE(SAVE_OHC, &CTab_PC::OnMsg)
 END_MESSAGE_MAP()
 
 // CTab_PC message handlers
@@ -148,51 +129,48 @@ void CTab_PC::OnSize(UINT nType, int cx, int cy)
 void CTab_PC::OnBnClickedReadConfig_PC()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"XML File (*.xml) |*.xml|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Config Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) 
+			path = FileDialog.GetPathName();
 		else return;
 	}
-
-	SetCurrentDirectory(current_path);
-
-	TCHAR widepath[MAX_PATH] = { 0 };	
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (!m_pPointCloud->readConfig(mulpath)) {
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
+	if (!m_pPointCloud->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for PointCloud.");
 		return;
 	}
 
 	oph::vec3 scale;
-
-	m_fieldLens = m_pPointCloud->getFieldLens();
 	m_pPointCloud->getScale(scale);
-	auto context = m_pPointCloud->getContext();
 	m_scaleX = scale[_X];
 	m_scaleY = scale[_Y];
 	m_scaleZ = scale[_Z];
-	m_offsetdepth = m_pPointCloud->getOffsetDepth();
-	m_pixelpitchX = context.pixel_pitch[_X];
-	m_pixelpitchY = context.pixel_pitch[_Y];
-	m_pixelnumX = context.pixel_number[_X];
-	m_pixelnumY = context.pixel_number[_Y];
-	m_wavelength = context.wave_length[0];
+	m_distance = m_pPointCloud->getDistance();
+
+	auto context = m_pPointCloud->getContext();
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SetWaveNum(context.waveNum);
+	pParent->SetWaveLength(context.wave_length);
+	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
+	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
+	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	m_bConfig = true;
-	if (m_bPC) m_buttonGenerate.EnableWindow(TRUE);
+	//if (m_bPC) m_buttonGenerate.EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
@@ -200,45 +178,42 @@ void CTab_PC::OnBnClickedReadConfig_PC()
 
 void CTab_PC::OnBnClickedLoadPc()
 {
-	// TODO: Add your control notification handler code here	
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	// TODO: Add your control notification handler code here
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"PLY File (*.ply) |*.ply|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szPlyPath = AfxGetApp()->GetProfileString(KEY_NAME, L"PLY Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szPlyPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ply")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ply"))
+			path = FileDialog.GetPathName(); 
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"PLY Path", path.Left(path.ReverseFind('\\') + 1));
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	_tcscpy_s(m_argParamW, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (m_pPointCloud->loadPointCloud(mulpath) == -1) 
+	if (m_pPointCloud->loadPointCloud(CW2A(path)) == -1) 
 	{
 		AfxMessageBox(L"it is not ply file for PointCloud.");
 		return;
 	}
 
-	strcpy_s(m_argParam, strlen(mulpath) + 1, mulpath);
+	strcpy_s(m_argParam, path.GetLength() + 1, CW2A(path));
 
 	m_bPC = true;
-	if (m_bConfig) m_buttonGenerate.EnableWindow(TRUE);
-
 	GetDlgItem(IDC_VIEW_PC)->EnableWindow(TRUE);
 
-	UpdateData(FALSE);
+
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 }
 
 
@@ -277,88 +252,16 @@ UINT CallFunc(void* param)
 	parammeter *pParam = (parammeter *)param;
 	((ophPointCloud *)pParam->pGEN)->generateHologram(pParam->flag);
 	pParam->pDialog->m_bFinished = TRUE;
-
+	
+	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	ophPointCloud *pPC = ((ophPointCloud *)pParam->pGEN);
 	Complex<Real> **pp = pPC->getComplexField();
-
-	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 	for (uint i = 0; i < pPC->getContext().waveNum; i++)
 		printf("=> Complex Field[%d][0] = %.15e / %.15e\n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
-}
-
-void CTab_PC::OnBnClickedGenerate_PC()
-{
-	// TODO: Add your control notification handler code here
-	bool bChangedConfig = CheckConfig();
-
-	//UpdateData(TRUE);
-
-	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
-		AfxMessageBox(L"Config value error - field lens");
-		return;
-	}
-	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
-		AfxMessageBox(L"Config value error - scale");
-		return;
-	}
-	if (m_offsetdepth == 0.0) {
-		AfxMessageBox(L"Config value error - offset depth");
-		return;
-	}	
-	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(L"Config value error - pixel pitch");
-		return;
-	}
-	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(L"Config value error - pixel number");
-		return;
-	}
-	if (m_wavelength == 0.0) {
-		AfxMessageBox(L"Config value error - wave length");
-		return;
-	}
-
-	auto context = m_pPointCloud->getContext();
-	m_pPointCloud->setOffsetDepth(m_offsetdepth);
-	//*context.wave_length = m_wavelength;
-
-	m_pPointCloud->setWaveLength(m_wavelength, 0);
-
-	m_pPointCloud->setResolution(ivec2(m_pixelnumX, m_pixelnumY));
-	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
-	m_pPointCloud->setMode(!m_buttonGPU.GetCheck());
-	m_pPointCloud->setViewingWindow(m_buttonViewingWindow.GetCheck());
-	
-	GetDlgItem(IDC_ENCODING_PC)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_OHC_PC)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_PC)->EnableWindow(FALSE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
-
-	Dialog_Progress progress;
-
-	parammeter *pParam = new parammeter;
-	pParam->pGEN = m_pPointCloud;
-	pParam->flag = m_idxDiff;
-	pParam->pDialog = &progress;
-
-	progress.m_bPercent = true;
-	progress.m_iPercent = m_pPointCloud->getPercent();
-	
-	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
-	progress.DoModal();
-	progress.DestroyWindow();
-
-	char szMsg[256] = { 0, };
-	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pPointCloud->getElapsedTime());
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
-
-	//UpdateData(FALSE); // 변수값 변경이 없으므로 주석처리
-	MakeFileName();
 }
 
 void CTab_PC::MakeFileName(CString szAppend)
@@ -371,79 +274,32 @@ void CTab_PC::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%dch_", m_pPointCloud->getContext().waveNum);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pPointCloud->getContext().pixel_number[_X], m_pPointCloud->getContext().pixel_number[_Y]);
 	m_szFileName.AppendFormat(L"v%d_", m_pPointCloud->getNumberOfPoints());
-	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
 	m_szFileName.AppendFormat(L"%s_", m_idxDiff == 0 ? L"RS" : L"Fresnel");
-	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
 }
 
-void CTab_PC::OnBnClickedEncodingPc()
+BOOL CTab_PC::SaveIMG()
 {
 	// TODO: Add your control notification handler code here
-/*	if (m_idxEncode == ophGen::ENCODE_SSB) {
-		m_pPointCloud->encodeHologram();
-		m_pPointCloud->normalize();
-	}
-	else */{
-		auto depth = m_pPointCloud->getOffsetDepth();
-		//m_pPointCloud->waveCarry(0, 2, depth);
-		switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pPointCloud)->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pPointCloud->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
-			break;
-		}
-		m_pPointCloud->normalize();
-	}
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	m_buttonSaveBmp.EnableWindow(TRUE);
-	GetEncodeName(m_szEncodeName);
-}
-
-
-void CTab_PC::OnBnClickedSaveBmp_PC()
-{
-	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
-
-	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
-	CString szFileName = m_szFileName;
-	szFileName.AppendFormat(L"%s", m_szEncodeName);
-	
-	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
-	}
+	pParent->SaveImage(path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return FALSE;
 
-	SetCurrentDirectory(current_path);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
 	_tcscpy_s(m_resultPath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
 	auto size = m_pPointCloud->getEncodeSize();
-	m_pPointCloud->save(mulpath, 8, nullptr, size[_X], size[_Y]);
+	int ch = m_pPointCloud->getContext().waveNum;
+	auto context = m_pPointCloud->getContext();	
 
-	GetDlgItem(IDC_VIEW_PC_BMP)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
+	m_pPointCloud->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
+	
+	pParent->OpenExplorer(path);
+	
+	return TRUE;
 }
 
 
@@ -459,51 +315,24 @@ void CTab_PC::OnBnClickedViewPcBmp()
 }
 
 
-void CTab_PC::OnBnClickedSaveOhc_PC()
+void CTab_PC::SaveOHC()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
-	}
+	pParent->SaveOHC(path);
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
+	_tcscpy_s(m_resultPath, path.GetBuffer());
 
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
-	if (m_pPointCloud->saveAsOhc(mulpath)) {
-		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
-	}
-}
-
-void CTab_PC::GetEncodeName(CString &szEncode)
-{
-	switch (m_idxEncode)
-	{
-	case 0: szEncode = L"Phase"; break;
-	case 1: szEncode = L"Amplitude"; break;
-	case 2: szEncode = L"Real"; break;
-	case 3: szEncode = L"SimpleNI"; break;
-	case 4: szEncode = L"Burckhardt"; break;
-	case 5: szEncode = L"TwoPhase"; break;
-	case 6: szEncode = L"SSB"; break;
-	case 7: szEncode = L"OffSSB"; break;
-	default: szEncode = L"Unknown"; break;
-	}
+	if (!path.GetLength()) return;
+	m_pPointCloud->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 }
 
 BOOL CTab_PC::OnInitDialog()
@@ -514,21 +343,7 @@ BOOL CTab_PC::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"R-S diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"Fresnel diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->SetCurSel(m_idxDiff);
-
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Amplitude");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Real");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Simple NI");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Burckhardt");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Two-Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Single-Side Band");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->AddString(L"Off-SSB");
-
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->SetCurSel(m_idxEncode);
-
-	// GeForce GPU 일 때만, 활성화
-	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
-	((CButton*)GetDlgItem(IDC_GPU_CHECK_PC))->EnableWindow(pDlg->IsGeforceGPU());
+	
 	
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -550,27 +365,13 @@ void CTab_PC::OnCbnSelchangeDiffMethodPc()
 	m_idxDiff = ((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->GetCurSel();
 }
 
-
-void CTab_PC::OnCbnSelchangeEncodeMethodPc()
-{
-	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
-	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_PC))->GetCurSel();
-}
-
 bool CTab_PC::CheckConfig()
 {
 	bool bChanged		= false;
-	double fieldLens	= m_fieldLens;
 	double scaleX		= m_scaleX;
 	double scaleY		= m_scaleY;
 	double scaleZ		= m_scaleZ;
-	double offsetDepth	= m_offsetdepth;
-	double ppX			= m_pixelpitchX;
-	double ppY			= m_pixelpitchY;
-	unsigned int pnX	= m_pixelnumX;
-	unsigned int pnY	= m_pixelnumY;
-	double wavelength	= m_wavelength;
+	double distance		= m_distance;
 	UpdateData(TRUE);
 
 	if (scaleX != m_scaleX || scaleY != m_scaleY || scaleZ != m_scaleZ) {
@@ -578,31 +379,79 @@ bool CTab_PC::CheckConfig()
 			scaleX, m_scaleX, scaleY, m_scaleY, scaleZ, m_scaleZ);
 		bChanged = true;
 	}
-	if (offsetDepth != m_offsetdepth) {
-		printf("\n*Changed Offset Depth*\nOffset Depth: %lf -> %lf\n",
-			offsetDepth, m_offsetdepth);
-		bChanged = true;
-	}
-	if (ppX != m_pixelpitchX || ppY != m_pixelpitchY) {
-		printf("\n*Changed Pixel Pitch*\nPixelPitchX: %lf -> %lf\nPixelPitchY: %lf -> %lf\n",
-			ppX, m_pixelpitchX, ppY, m_pixelpitchY);
-		bChanged = true;
-	}
-	if (pnX != m_pixelnumX || pnY != m_pixelnumY) {
-		printf("\n*Changed Pixel Num*\nPixelNumX: %u -> %u\nPixelNumY: %u -> %u\n",
-			pnX, m_pixelnumX, pnY, m_pixelnumY);
-		bChanged = true;
-	}
-	if (fieldLens != m_fieldLens) {
-		printf("\n*Changed Field Length*\nField Length: %lf -> %lf\n",
-			fieldLens, m_fieldLens);
-		bChanged = true;
-	}
-	if (wavelength != m_wavelength) {
-		printf("\n*Changed Wave Length*\nWave Length: %lf -> %lf\n",
-			wavelength, m_wavelength);
+	if (distance != m_distance) {
+		printf("\n*Changed Distance*\nOffset Depth: %lf -> %lf\n",
+			distance, m_distance);
 		bChanged = true;
 	}
 
 	return bChanged;
+}
+
+LRESULT CTab_PC::OnMsg(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == GENERATE) {
+		bool bChangedConfig = CheckConfig();
+
+		UpdateData(TRUE);
+
+		if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
+			AfxMessageBox(L"Config value error - scale");
+			return FALSE;
+		}
+		if (m_distance == 0.0) {
+			AfxMessageBox(L"Config value error - offset depth");
+			return FALSE;
+		}
+		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+		auto context = m_pPointCloud->getContext();
+		m_pPointCloud->setDistance(m_distance);
+		m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
+		m_pPointCloud->setMode(!dlg->UseGPGPU());
+		m_pPointCloud->setViewingWindow(dlg->UseVW());
+
+		dlg->ForegroundConsole();
+
+		Dialog_Progress progress;
+
+		BOOL bIsFinish = FALSE;
+
+		parammeter *pParam = new parammeter;
+		pParam->flag = m_idxDiff;
+		pParam->pGEN = m_pPointCloud;
+		pParam->pDialog = &progress;
+		progress.m_bPercent = true;
+		progress.m_iPercent = m_pPointCloud->getPercent();
+
+		CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
+		progress.DoModal();
+		progress.DestroyWindow();	
+	}
+	else if (wParam == ENCODE) {
+		int idx = lParam;
+		switch (ophGen::ENCODE_FLAG(idx)) {
+		case ophGen::ENCODE_PHASE:
+		case ophGen::ENCODE_AMPLITUDE:
+		case ophGen::ENCODE_REAL:
+		case ophGen::ENCODE_SIMPLENI:
+		case ophGen::ENCODE_BURCKHARDT:
+		case ophGen::ENCODE_TWOPHASE:
+			((ophGen*)m_pPointCloud)->encoding(ophGen::ENCODE_FLAG(idx));
+			break;
+		case ophGen::ENCODE_SSB:
+		case ophGen::ENCODE_OFFSSB:
+			m_pPointCloud->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
+			break;
+		case ophGen::ENCODE_SYMMETRIZATION:
+			m_pPointCloud->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
+		}
+		m_pPointCloud->normalize();
+	}
+	else if (wParam == SAVE_IMG) {
+		return SaveIMG();
+	}
+	else if (wParam == SAVE_OHC) {
+		SaveOHC();
+	}
+	return TRUE;
 }

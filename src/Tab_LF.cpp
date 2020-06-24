@@ -14,25 +14,19 @@
 #include "Dialog_Progress.h"
 #include "Dialog_Prompt.h"
 
+#define KEY_NAME L"LightField"
 IMPLEMENT_DYNAMIC(CTab_LF, CDialogEx)
 
 CTab_LF::CTab_LF(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_LF, pParent)
-	, m_fieldLens(0)
 	, m_distance(0)
 	, m_numimgX(0)
 	, m_numimgY(0)
-	, m_pixelpitchX(0)
-	, m_pixelpitchY(0)
-	, m_pixelnumX(0)
-	, m_pixelnumY(0)
-	, m_wavelength(0)
 	, m_argParam()
 	, m_resultPath()
 	, m_bConfig(FALSE)
 	, m_bDir(FALSE)
 	, m_bEncode(FALSE)
-	, m_idxEncode(3)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
 #endif
@@ -47,20 +41,9 @@ CTab_LF::~CTab_LF()
 void CTab_LF::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
-	DDX_Text(pDX, IDC_SCALE_X, m_distance);
-	DDX_Text(pDX, IDC_SCALE_Y, m_numimgX);
-	DDX_Text(pDX, IDC_SCALE_Z, m_numimgY);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_X, m_pixelpitchX);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_Y, m_pixelpitchY);
-	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
-	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
-	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
-	DDX_Control(pDX, IDC_GPU_CHECK_LF, m_buttonGPU);
-	DDX_Control(pDX, IDC_GENERATE_LF, m_buttonGenerate);
-	DDX_Control(pDX, IDC_SAVE_BMP_LF, m_buttonSaveBmp);
-	DDX_Control(pDX, IDC_SAVE_OHC_LF, m_buttonSaveOhc);
-	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Text(pDX, IDC_DISTANCE_LF, m_distance);
+	DDX_Text(pDX, IDC_NUM_OF_IMAGE_X, m_numimgX);
+	DDX_Text(pDX, IDC_NUM_OF_IMAGE_Y, m_numimgY);
 }
 
 
@@ -68,15 +51,13 @@ BEGIN_MESSAGE_MAP(CTab_LF, CDialogEx)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_READ_CONFIG_LF, &CTab_LF::OnBnClickedReadConfig_LF)
 	ON_BN_CLICKED(IDC_FIND_DIR, &CTab_LF::OnBnClickedFindDir)
-	ON_BN_CLICKED(IDC_GENERATE_LF, &CTab_LF::OnBnClickedGenerate_LF)
-	ON_BN_CLICKED(IDC_SAVE_BMP_LF, &CTab_LF::OnBnClickedSaveBmp_LF)
-	ON_BN_CLICKED(IDC_SAVE_OHC_LF, &CTab_LF::OnBnClickedSaveOhc_LF)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_VIEW_LF, &CTab_LF::OnBnClickedViewLf)
-	ON_BN_CLICKED(IDC_VIEW_LF_BMP, &CTab_LF::OnBnClickedViewLfBmp)
-	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_LF, &CTab_LF::OnCbnSelchangeEncodeMethodLf)
-	ON_BN_CLICKED(IDC_ENCODING_LF, &CTab_LF::OnBnClickedEncodingLf)
+	ON_MESSAGE(GENERATE, &CTab_LF::OnMsg)
+	ON_MESSAGE(ENCODE, &CTab_LF::OnMsg)
+	ON_MESSAGE(SAVE_IMG, &CTab_LF::OnMsg)
+	ON_MESSAGE(SAVE_OHC, &CTab_LF::OnMsg)
 END_MESSAGE_MAP()
 
 
@@ -136,46 +117,46 @@ void CTab_LF::OnSize(UINT nType, int cx, int cy)
 void CTab_LF::OnBnClickedReadConfig_LF()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"XML File (*.xml) |*.xml|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Config Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetPathName();
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (!m_pLightField->readConfig(mulpath)) {
+	if (!m_pLightField->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for LightField.");
 		return;
 	}
 
-	m_fieldLens = m_pLightField->getFieldLens();
 	m_distance = m_pLightField->getDistRS2Holo();
 	m_numimgX = m_pLightField->getNumImage()[_X];
 	m_numimgY = m_pLightField->getNumImage()[_Y];
-	m_pixelpitchX = m_pLightField->getContext().pixel_pitch[_X];
-	m_pixelpitchY = m_pLightField->getContext().pixel_pitch[_Y];
-	m_pixelnumX = m_pLightField->getContext().pixel_number[_X];
-	m_pixelnumY = m_pLightField->getContext().pixel_number[_Y];
-	m_wavelength = m_pLightField->getContext().wave_length[0];
 
 	m_bConfig = true;
 	GetDlgItem(IDC_FIND_DIR)->EnableWindow(TRUE);
+
+	auto context = m_pLightField->getContext();
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SetWaveNum(context.waveNum);
+	pParent->SetWaveLength(context.wave_length);
+	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
+	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
+	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	UpdateData(FALSE);
 }
@@ -187,25 +168,28 @@ void CTab_LF::OnBnClickedFindDir()
 	TCHAR szSelPath[MAX_PATH] = { 0, };
 	TCHAR szCurPath[MAX_PATH] = { 0, };
 	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CFolderPickerDialog dlg(NULL, OFN_FILEMUSTEXIST, NULL, 0);
+	CString path;
+	CString szImgsPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Images Path", szCurPath);
+	CFolderPickerDialog dlg(szImgsPath, OFN_FILEMUSTEXIST, NULL, 0);
 	if (dlg.DoModal() == IDOK) {
-		wsprintf(szSelPath, L"%s", dlg.GetPathName());
+		path = dlg.GetPathName();
 	}
 	else
 		return;
 
 	SetCurrentDirectory(szCurPath);
-	CStringA szPath = CW2A(szSelPath);
-	if (szPath.IsEmpty()) return;
-	if (m_pLightField->loadLF(szPath, "bmp") == -1) {
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Images Path", path.Left(path.ReverseFind('\\') + 1));
+	if (m_pLightField->loadLF(CW2A(path), "bmp") == -1) {
 		AfxMessageBox(L"Load LF image failed");
 		return;
 	}
 
 	m_bDir = TRUE;
-	if (m_bConfig) m_buttonGenerate.EnableWindow(TRUE);
 	GetDlgItem(IDC_VIEW_LF)->EnableWindow(TRUE);
+
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 }
 
 
@@ -257,129 +241,27 @@ UINT CallFuncLF(void* param)
 	return 1;
 }
 
-void CTab_LF::OnBnClickedGenerate_LF()
-{
-	// TODO: Add your control notification handler code here	
-	UpdateData(TRUE);
-	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
-		AfxMessageBox(L"Config value error - field lens");
-		return;
-	}
-	if (m_distance == 0.0) {
-		AfxMessageBox(L"Config value error - distance RS to Hologram");
-		return;
-	}
-	if (m_numimgX == 0 || m_numimgY == 0) {
-		AfxMessageBox(L"Config value error - number of images of LF");
-		return;
-	}
-	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(L"Config value error - pixel pitch");
-		return;
-	}
-	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(L"Config value error - pixel number");
-		return;
-	}
-	if (m_wavelength == 0.0) {
-		AfxMessageBox(L"Config value error - wave length");
-		return;
-	}
-	m_pLightField->setDistRS2Holo(m_distance);
-	m_pLightField->setNumImage(m_numimgX, m_numimgY);
-	m_pLightField->setPixelPitch(vec2(m_pixelpitchX, m_pixelpitchY));
-	m_pLightField->setPixelNumber(ivec2(m_pixelnumX, m_pixelnumY));
-	m_pLightField->setWaveLength(m_wavelength, 0);
-	m_pLightField->setMode(!m_buttonGPU.GetCheck());
-	m_pLightField->setViewingWindow(m_buttonViewingWindow.GetCheck());
 
-
-	GetDlgItem(IDC_SAVE_OHC_LF)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_LF)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_LF)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
-
-	Dialog_Progress progress;
-
-	BOOL bIsFinish = FALSE;
-
-	parammeter *pParam = new parammeter;
-	pParam->pGEN = m_pLightField;
-	pParam->pDialog = &progress;
-
-	CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
-	progress.DoModal();
-	progress.DestroyWindow();
-
-	char szMsg[256] = { 0, };
-	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pLightField->getElapsedTime());
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
-	MakeFileName();
-}
-
-void CTab_LF::OnBnClickedEncodingLf()
+void CTab_LF::SaveIMG()
 {
 	// TODO: Add your control notification handler code here
-	auto dist = m_pLightField->getDistRS2Holo();
-	//m_pLightField->waveCarry(0, 0.1, dist);
-	switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
-	case ophGen::ENCODE_PHASE:
-	case ophGen::ENCODE_AMPLITUDE:
-	case ophGen::ENCODE_REAL:
-	case ophGen::ENCODE_SIMPLENI:
-	case ophGen::ENCODE_BURCKHARDT:
-	case ophGen::ENCODE_TWOPHASE:
-		m_pLightField->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
-		break;
-	case ophGen::ENCODE_SSB:
-	case ophGen::ENCODE_OFFSSB:
-		m_pLightField->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
-		break;
-	}
-	m_pLightField->normalize();
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	m_buttonSaveBmp.EnableWindow(TRUE);
-	GetEncodeName(m_szEncodeName);
-}
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-
-void CTab_LF::OnBnClickedSaveBmp_LF()
-{
-	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
-
-	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-	CString szFileName = m_szFileName;
-	szFileName.AppendFormat(L"%s", m_szEncodeName);
-	
-	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
-	}
+	pParent->SaveImage(path);
 
-	SetCurrentDirectory(current_path);
-
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
 	_tcscpy_s(m_resultPath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
 
 	ivec2 encodeSize = m_pLightField->getEncodeSize();
-	m_pLightField->save(mulpath, 8, nullptr, encodeSize[_X], encodeSize[_Y]);
-
-	GetDlgItem(IDC_VIEW_LF_BMP)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
+	int ch = m_pLightField->getContext().waveNum;
+	m_pLightField->save(CW2A(path), 8 *ch, nullptr, encodeSize[_X], encodeSize[_Y]);
+	
+	pParent->OpenExplorer(path);
 }
 
 void CTab_LF::OnBnClickedViewLfBmp()
@@ -394,73 +276,35 @@ void CTab_LF::OnBnClickedViewLfBmp()
 }
 
  
-void CTab_LF::OnBnClickedSaveOhc_LF()
+void CTab_LF::SaveOHC()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
-	}
+	pParent->SaveOHC(path);
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
+	_tcscpy_s(m_resultPath, path.GetBuffer());
 
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
-	if (m_pLightField->saveAsOhc(mulpath)) {
-
-		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
-	}
+	if (!path.GetLength()) return;
+	m_pLightField->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 }
 
-void CTab_LF::GetEncodeName(CString &szEncode)
-{
-	switch (m_idxEncode)
-	{
-	case 0: szEncode = L"Phase"; break;
-	case 1: szEncode = L"Amplitude"; break;
-	case 2: szEncode = L"Real"; break;
-	case 3: szEncode = L"SimpleNI"; break;
-	case 4: szEncode = L"Burckhardt"; break;
-	case 5: szEncode = L"TwoPhase"; break;
-	case 6: szEncode = L"SSB"; break;
-	case 7: szEncode = L"OffSSB"; break;
-	default: szEncode = L"Unknown"; break;
-	}
-}
 
 BOOL CTab_LF::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Amplitude");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Real");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Simple NI");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Burckhardt");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Two-Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Single-Side Band");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->AddString(L"Off-SSB");
-
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->SetCurSel(m_idxEncode);
-
 	// GeForce GPU 일 때만, 활성화
 	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
-	((CButton*)GetDlgItem(IDC_GPU_CHECK_LF))->EnableWindow(pDlg->IsGeforceGPU());
+
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -475,14 +319,6 @@ void CTab_LF::OnDestroy()
 	m_pLightField->release();
 }
 
-void CTab_LF::OnCbnSelchangeEncodeMethodLf()
-{
-	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
-
-	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_LF))->GetCurSel();
-}
-
 void CTab_LF::MakeFileName(CString szAppend)
 {
 	if (szAppend.IsEmpty()) {
@@ -493,6 +329,68 @@ void CTab_LF::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%dch_", m_pLightField->getContext().waveNum);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pLightField->getContext().pixel_number[_X], m_pLightField->getContext().pixel_number[_Y]);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pLightField->getNumImage()[_X], m_pLightField->getNumImage()[_Y]);
-	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
-	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
+}
+
+
+LRESULT CTab_LF::OnMsg(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == GENERATE) {
+		UpdateData(TRUE);
+		if (m_distance == 0.0) {
+			AfxMessageBox(L"Config value error - distance RS to Hologram");
+			return FALSE;
+		}
+		if (m_numimgX == 0 || m_numimgY == 0) {
+			AfxMessageBox(L"Config value error - number of images of LF");
+			return FALSE;
+		}
+		m_pLightField->setDistRS2Holo(m_distance);
+		m_pLightField->setNumImage(m_numimgX, m_numimgY);
+
+		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+
+		m_pLightField->setMode(!dlg->UseGPGPU());
+		m_pLightField->setViewingWindow(dlg->UseVW());
+
+		dlg->ForegroundConsole();
+
+		Dialog_Progress progress;
+
+		BOOL bIsFinish = FALSE;
+
+		parammeter *pParam = new parammeter;
+		pParam->pGEN = m_pLightField;
+		pParam->pDialog = &progress;
+
+		CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
+		progress.DoModal();
+		progress.DestroyWindow();
+	}
+	else if (wParam == ENCODE) {
+		int idx = lParam;
+		switch (ophGen::ENCODE_FLAG(idx)) {
+		case ophGen::ENCODE_PHASE:
+		case ophGen::ENCODE_AMPLITUDE:
+		case ophGen::ENCODE_REAL:
+		case ophGen::ENCODE_SIMPLENI:
+		case ophGen::ENCODE_BURCKHARDT:
+		case ophGen::ENCODE_TWOPHASE:
+			((ophGen*)m_pLightField)->encoding(ophGen::ENCODE_FLAG(idx));
+			break;
+		case ophGen::ENCODE_SSB:
+		case ophGen::ENCODE_OFFSSB:
+			m_pLightField->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
+			break;
+		case ophGen::ENCODE_SYMMETRIZATION:
+			m_pLightField->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
+		}
+		m_pLightField->normalize();
+	}
+	else if (wParam == SAVE_IMG) {
+		SaveIMG();
+	}
+	else if (wParam == SAVE_OHC) {
+		SaveOHC();
+	}
+	return TRUE;
 }

@@ -1,9 +1,7 @@
 #pragma once
 #include "afxwin.h"
 
-
 // CTab_PC dialog
-
 class ophPointCloud;
 class Dialog_Progress;
 
@@ -32,20 +30,20 @@ public:
 	afx_msg void OnBnClickedLoadPc();
 	afx_msg void OnBnClickedViewPc();
 	afx_msg void OnBnClickedViewPcBmp();
-	afx_msg void OnBnClickedGenerate_PC();
-	afx_msg void OnBnClickedEncodingPc();
-	afx_msg void OnBnClickedSaveBmp_PC();
-	afx_msg void OnBnClickedSaveOhc_PC();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeDiffMethodPc();
-	afx_msg void OnCbnSelchangeEncodeMethodPc();
+	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
 	bool CheckConfig();
+
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
+	ophPointCloud* GetInstance() { return m_pPointCloud; }
+	BOOL SaveIMG();
+	void SaveOHC();
 	CString m_szFileName;
 	CString m_szEncodeName;
 	ophPointCloud *m_pPointCloud;
@@ -58,24 +56,12 @@ public:
 	TCHAR	m_resultPath[MAX_PATH];
 	BOOL	m_bFinish;
 
-	double			m_fieldLens;
 	double			m_scaleX;
 	double			m_scaleY;
 	double			m_scaleZ;
-	double			m_offsetdepth;
-	double			m_pixelpitchX;
-	double			m_pixelpitchY;
-	unsigned int	m_pixelnumX;
-	unsigned int	m_pixelnumY;
-	double			m_wavelength;
+	double			m_distance;
 
 	int		m_idxDiff;
-	int		m_idxEncode;
 
-	CButton m_buttonGenerate;
-	CButton m_buttonSaveBmp;
-	CButton m_buttonSaveOhc;
-	CButton m_buttonGPU;
-	CButton m_buttonViewingWindow;
 	BOOL m_bTest;
 };

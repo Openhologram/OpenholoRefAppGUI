@@ -10,6 +10,7 @@
 
 #include "resource.h"		// main symbols
 
+#define REG_KEY L"Openholo-RefApp"
 
 // COpenholoRefApp:
 // See OpenholoRefAppGUI.cpp for the implementation of this class
@@ -27,6 +28,7 @@ public:
 // Implementation
 
 	DECLARE_MESSAGE_MAP()
+	virtual int ExitInstance();
 };
 
 extern COpenholoRefApp theApp;

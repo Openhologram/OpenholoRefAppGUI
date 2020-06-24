@@ -1,21 +1,21 @@
-#pragma once
+﻿#pragma once
 #include "afxwin.h"
 
 
 // CTab_DM dialog
-class ophDepthMap;
+class ophIFTA;
 
-class CTab_DM : public CDialogEx
+class CTab_IFTA : public CDialogEx
 {
-	DECLARE_DYNAMIC(CTab_DM)
+	DECLARE_DYNAMIC(CTab_IFTA)
 
 public:
-	CTab_DM(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CTab_DM();
+	CTab_IFTA(CWnd* pParent = NULL);   // standard constructor
+	virtual ~CTab_IFTA();
 
-// Dialog Data
+	// Dialog Data
 #ifdef AFX_DESIGN_TIME
-	enum { IDD = IDD_DLG_DM };
+	enum { IDD = IDD_DLG_IFTA };
 #endif
 
 protected:
@@ -26,32 +26,26 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnBnClickedReadConfig_DM();
-	afx_msg void OnBnClickedLoadDImg();
-	afx_msg void OnBnClickedLoadRgbImg();
-	afx_msg void OnBnClickedViewDm();
-	afx_msg void OnBnClickedViewDmBmp();
-	afx_msg void OnBnClickedViewDmImg();
+	afx_msg void OnBnClickedReadConfig_Ifta();
+	afx_msg void OnBnClickedLoadRGBImg();
+	afx_msg void OnBnClickedLoadDepthImg();
+	afx_msg void OnBnClickedViewIfta();
+	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	void SaveIMG();
+	void SaveOHC();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg void OnCbnSelchangePropagationMethodDm();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	bool CheckConfig();
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void InitUI();
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
-	bool CheckConfig();
-	void SaveOHC();
-	void SaveIMG();
-	ophDepthMap* GetInstance() { return m_pDepthMap; }
-	
-	void Generate();
-
+	ophIFTA* GetInstance() { return m_pIFTA; }
 	CString m_szFileName;
 	CString m_szEncodeName;
-	ophDepthMap*	m_pDepthMap;
+	ophIFTA*		m_pIFTA;
 	CString			m_szPath;
 	CString			m_szDname;
 	CString			m_szRGBname;
@@ -61,15 +55,15 @@ public:
 	TCHAR			m_resultPath[MAX_PATH];
 
 	bool	m_bConfig;
-	bool	m_bDimg;
 	bool	m_bRGBimg;
+	bool	m_bDimg;
 	bool	m_bEncode;
 
+	int		m_nDepth;
+	int		m_nIteration;
 	double	m_nearDepth;
 	double	m_farDepth;
-	int		m_numDepth;
 
-	int		m_idxPropagation;
 #ifdef TEST_MODE
 	BOOL m_bTest;
 #endif

@@ -12,22 +12,16 @@
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
 #include "Dialog_Prompt.h"
-
+#define KEY_NAME L"DepthMap"
 // CTab_DM dialog
 
 IMPLEMENT_DYNAMIC(CTab_DM, CDialogEx)
 
 CTab_DM::CTab_DM(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_DM, pParent)
-	, m_fieldLens(0)
 	, m_nearDepth(0)
 	, m_farDepth(0)
 	, m_numDepth(0)
-	, m_pixelpitchX(0)
-	, m_pixelpitchY(0)
-	, m_pixelnumX(0)
-	, m_pixelnumY(0)
-	, m_wavelength(0)
 	, m_bConfig(false)
 	, m_bDimg(false)
 	, m_bRGBimg(false)
@@ -35,7 +29,6 @@ CTab_DM::CTab_DM(CWnd* pParent /*=NULL*/)
 	, m_argParamDimg()
 	, m_argParamRGBimg()
 	, m_resultPath()
-	, m_idxEncode(6)
 	, m_idxPropagation(0)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
@@ -51,38 +44,27 @@ CTab_DM::~CTab_DM()
 void CTab_DM::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
-	DDX_Text(pDX, IDC_NEAR_DEPTH, m_nearDepth);
-	DDX_Text(pDX, IDC_FAR_DEPTH, m_farDepth);
-	DDX_Text(pDX, IDC_NUM_OF_DEPTH, m_numDepth);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_X, m_pixelpitchX);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_Y, m_pixelpitchY);
-	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
-	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
-	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
-	DDX_Control(pDX, IDC_GPU_CHECK_DM, m_buttonGPU);
-	DDX_Control(pDX, IDC_SAVE_BMP_DM, m_buttonSaveBmp);
-	DDX_Control(pDX, IDC_SAVE_OHC_DM, m_buttonSaveOhc);
-	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Text(pDX, IDC_NEAR_DEPTH_DM, m_nearDepth);
+	DDX_Text(pDX, IDC_FAR_DEPTH_DM, m_farDepth);
+	DDX_Text(pDX, IDC_DEPTH_LEVEL_DM, m_numDepth);
 }
 
 
 BEGIN_MESSAGE_MAP(CTab_DM, CDialogEx)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_READ_CONFIG_DM, &CTab_DM::OnBnClickedReadConfig_DM)
-	ON_BN_CLICKED(IDC_LOAD_D_IMG, &CTab_DM::OnBnClickedLoadDImg)
-	ON_BN_CLICKED(IDC_LOAD_RGB_IMG, &CTab_DM::OnBnClickedLoadRgbImg)
-	ON_BN_CLICKED(IDC_GENERATE_DM, &CTab_DM::OnBnClickedGenerate_DM)
-	ON_BN_CLICKED(IDC_SAVE_BMP_DM, &CTab_DM::OnBnClickedSaveBmp_DM)
-	ON_BN_CLICKED(IDC_SAVE_OHC_DM, &CTab_DM::OnBnClickedSaveOhc_DM)
+	ON_BN_CLICKED(IDC_LOAD_D_IMG_DM, &CTab_DM::OnBnClickedLoadDImg)
+	ON_BN_CLICKED(IDC_LOAD_RGB_IMG_DM, &CTab_DM::OnBnClickedLoadRgbImg)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
-	ON_BN_CLICKED(IDC_VIEW_DM, &CTab_DM::OnBnClickedViewDm)
-	ON_BN_CLICKED(IDC_VIEW_DM_BMP, &CTab_DM::OnBnClickedViewDmBmp)
-	ON_BN_CLICKED(IDC_VIEW_DM_IMG, &CTab_DM::OnBnClickedViewDmImg)
-	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_DM, &CTab_DM::OnCbnSelchangeEncodeMethodDm)
+	ON_BN_CLICKED(IDC_VIEW_MODEL_DM, &CTab_DM::OnBnClickedViewDm)
+	//ON_BN_CLICKED(IDC_VIEW_DM_BMP, &CTab_DM::OnBnClickedViewDmBmp)
+	ON_BN_CLICKED(IDC_VIEW_IMG_DM, &CTab_DM::OnBnClickedViewDmImg)
 	ON_CBN_SELCHANGE(IDC_PROPAGATION_METHOD_DM, &CTab_DM::OnCbnSelchangePropagationMethodDm)
-	ON_BN_CLICKED(IDC_ENCODING_DM, &CTab_DM::OnBnClickedEncodingDm)
+	ON_MESSAGE(GENERATE, &CTab_DM::OnMsg)
+	ON_MESSAGE(ENCODE, &CTab_DM::OnMsg)
+	ON_MESSAGE(SAVE_IMG, &CTab_DM::OnMsg)
+	ON_MESSAGE(SAVE_OHC, &CTab_DM::OnMsg)
 END_MESSAGE_MAP()
 
 
@@ -147,30 +129,27 @@ void CTab_DM::OnSize(UINT nType, int cx, int cy)
 void CTab_DM::OnBnClickedReadConfig_DM()
 {
 	// TODO: Add your control notification handler code here	
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"XML File (*.xml) |*.xml|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Config Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetPathName();
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (!m_pDepthMap->readConfig(mulpath)) {
+	if (!m_pDepthMap->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for DepthMap.");
 		return;
 	}
@@ -178,25 +157,24 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	auto context = m_pDepthMap->getContext();
 	//auto config = m_pDepthMap->getConfig();
 
-	m_fieldLens = m_pDepthMap->getFieldLens();
 	m_nearDepth = m_pDepthMap->getNearDepth();
 	m_farDepth = m_pDepthMap->getFarDepth();
 	m_numDepth = m_pDepthMap->getNumOfDepth();
-	m_pixelpitchX = context.pixel_pitch[_X];
-	m_pixelpitchY = context.pixel_pitch[_Y];
-	int pixX = context.pixel_number[_X];
-	m_pixelnumX = context.pixel_number[_X];//pixX / 3;
-	m_pixelnumY = context.pixel_number[_Y];
-	m_wavelength = context.wave_length[0];
 
 	m_bConfig = true;
 	//if (m_bDimg && m_bRGBimg) GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
-	GetDlgItem(IDC_LOAD_D_IMG)->EnableWindow(TRUE);
-	GetDlgItem(IDC_LOAD_RGB_IMG)->EnableWindow(TRUE);
+	GetDlgItem(IDC_LOAD_D_IMG_DM)->EnableWindow(TRUE);
+	GetDlgItem(IDC_LOAD_RGB_IMG_DM)->EnableWindow(TRUE);
 
-	// 이미지를 로드하면, pixel num 변경을 금지.
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, false, 0);
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, false, 0);
+
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SetWaveNum(context.waveNum);
+	pParent->SetWaveLength(context.wave_length);
+	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
+	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
+	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
+
 	UpdateData(FALSE);
 }
 
@@ -204,122 +182,86 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 void CTab_DM::OnBnClickedLoadDImg()
 {
 	// TODO: Add your control notification handler code here	
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szImgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Depth-Img Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szImgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
 		if (!ext.CompareNoCase(L"bmp")) {
-			path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+			path = FileDialog.GetPathName();
 			m_szPath = FileDialog.GetFolderPath();
 			m_szDname = FileDialog.GetFileTitle();
 		}
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
-
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Depth-Img Path", path.Left(path.ReverseFind('\\') + 1));
 	_tcscpy_s(m_argParamDimg, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
+	
 	if (m_bRGBimg) {
-		_tcscpy_s(widepath, m_szPath.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-		TCHAR wideDname[MAX_PATH] = { 0 };
-		char mulDname[MAX_PATH] = { 0 };
-		_tcscpy_s(wideDname, m_szDname.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, wideDname, MAX_PATH, mulDname, MAX_PATH, NULL, NULL);
-
-		TCHAR wideRGBname[MAX_PATH] = { 0 };
-		char mulRGBname[MAX_PATH] = { 0 };
-		_tcscpy_s(wideRGBname, m_szRGBname.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, wideRGBname, MAX_PATH, mulRGBname, MAX_PATH, NULL, NULL);
-
-		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
+		if (!m_pDepthMap->readImageDepth(CW2A(m_szPath), CW2A(m_szRGBname), CW2A(m_szDname))) {
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
 			return;
 		}
-		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
-		GetDlgItem(IDC_VIEW_DM_MODEL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
+		GetDlgItem(IDC_VIEW_IMG_DM)->EnableWindow(TRUE);
+		GetDlgItem(IDC_VIEW_MODEL_DM)->EnableWindow(TRUE);
 	}
 	m_bDimg = TRUE;
 
-	// 이미지를 로드하면, pixel num 변경을 금지.
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
+	if (m_bDimg && m_bRGBimg)
+		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 }
 
 
 void CTab_DM::OnBnClickedLoadRgbImg()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szImgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"RGB-Img Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szImgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
 		if (!ext.CompareNoCase(L"bmp")) {
-			path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+			path = FileDialog.GetPathName();
 			m_szPath = FileDialog.GetFolderPath();
 			m_szRGBname = FileDialog.GetFileTitle();
 		}
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
-
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"RGB-Img Path", path.Left(path.ReverseFind('\\') + 1));
 	_tcscpy_s(m_argParamRGBimg, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
 
 	if (m_bDimg) {
-		_tcscpy_s(widepath, m_szPath.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-		TCHAR wideDname[MAX_PATH] = { 0 };
-		char mulDname[MAX_PATH] = { 0 };
-		_tcscpy_s(wideDname, m_szDname.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, wideDname, MAX_PATH, mulDname, MAX_PATH, NULL, NULL);
-
-		TCHAR wideRGBname[MAX_PATH] = { 0 };
-		char mulRGBname[MAX_PATH] = { 0 };
-		_tcscpy_s(wideRGBname, m_szRGBname.GetBuffer());
-		WideCharToMultiByte(CP_ACP, 0, wideRGBname, MAX_PATH, mulRGBname, MAX_PATH, NULL, NULL);
-
-
-		if (!m_pDepthMap->readImageDepth(mulpath, mulRGBname, mulDname)) {
+		if (!m_pDepthMap->readImageDepth(CW2A(m_szPath), CW2A(m_szRGBname), CW2A(m_szDname))) {
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
 			return;
 		}
-		GetDlgItem(IDC_VIEW_DM_IMG)->EnableWindow(TRUE);
-		GetDlgItem(IDC_VIEW_DM_MODEL)->EnableWindow(TRUE);
-		GetDlgItem(IDC_GENERATE_DM)->EnableWindow(TRUE);
+		GetDlgItem(IDC_VIEW_IMG_DM)->EnableWindow(TRUE);
+		GetDlgItem(IDC_VIEW_MODEL_DM)->EnableWindow(TRUE);
 	}
 	m_bRGBimg = TRUE;
-	// 이미지를 로드하면, pixel num 변경을 금지.
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_X)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
-	::SendMessage(GetDlgItem(IDC_PIXEL_NUM_Y)->GetSafeHwnd(), EM_SETREADONLY, true, 0);
+
+	if (m_bDimg && m_bRGBimg)
+		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 }
 
 void CTab_DM::OnBnClickedViewDmImg()
@@ -375,14 +317,38 @@ UINT CallFuncDM(void* param)
 	Complex<Real> **pp = pDepth->getComplexField();
 	
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-	for(uint i=0;i< pDepth->getContext().waveNum;i++)
+	for (uint i = 0; i < pDepth->getContext().waveNum; i++) {
 		printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
+	}
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
 	return 1;
 }
 
+void CTab_DM::Generate()
+{
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
+
+	Dialog_Progress progress;
+
+	BOOL bIsFinish = FALSE;
+
+	parammeter *pParam = new parammeter;
+	pParam->pGEN = m_pDepthMap;
+	pParam->pDialog = &progress;
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pDepthMap->getPercent();
+
+	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
+	progress.DoModal();
+	progress.DestroyWindow();
+
+	char szMsg[256] = { 0, };
+	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pDepthMap->getElapsedTime());
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
+}
+/*
 void CTab_DM::OnBnClickedGenerate_DM()
 {
 	// TODO: Add your control notification handler code here
@@ -394,18 +360,6 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	}
 	if (m_numDepth == 0) {
 		AfxMessageBox(L"Config value error - number of depth");
-		return;
-	}
-	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(L"Config value error - pixel pitch");
-		return;
-	}
-	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(L"Config value error - pixel number");
-		return;
-	}
-	if (m_wavelength == 0.0) {
-		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
 	
@@ -470,11 +424,11 @@ void CTab_DM::OnBnClickedGenerate_DM()
 void CTab_DM::OnBnClickedEncodingDm()
 {
 	// TODO: Add your control notification handler code here
-	if (m_idxEncode == ophGen::ENCODE_SSB) {
-		m_pDepthMap->encodeHologram();
-		m_pDepthMap->normalize();
-	}
-	else {
+	//if (m_idxEncode == ophGen::ENCODE_SSB) {
+	//	m_pDepthMap->encodeHologram();
+	//	m_pDepthMap->normalize();
+	//}
+	//else {
 		//m_pDepthMap->waveCarry(0, 0.5);
 		switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
 		case ophGen::ENCODE_PHASE:
@@ -483,7 +437,7 @@ void CTab_DM::OnBnClickedEncodingDm()
 		case ophGen::ENCODE_SIMPLENI:
 		case ophGen::ENCODE_BURCKHARDT:
 		case ophGen::ENCODE_TWOPHASE:
-			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
+			((ophGen*)m_pDepthMap)->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 			break;
 		case ophGen::ENCODE_SSB:
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
@@ -495,12 +449,12 @@ void CTab_DM::OnBnClickedEncodingDm()
 			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 		}
 		m_pDepthMap->normalize();
-	}
+	//}
 
 	m_buttonSaveBmp.EnableWindow(TRUE);
 	GetEncodeName(m_szEncodeName);
 }
-
+*/
 void CTab_DM::MakeFileName(CString szAppend)
 {
 	if (szAppend.IsEmpty()) {
@@ -511,47 +465,30 @@ void CTab_DM::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%dch_", m_pDepthMap->getContext().waveNum);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pDepthMap->getContext().pixel_number[_X], m_pDepthMap->getContext().pixel_number[_Y]);
 	m_szFileName.AppendFormat(L"d%d_", m_pDepthMap->getNumOfDepth());
-	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
 	m_szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"AS" : L"Unknown");
-	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
 }
 
-void CTab_DM::OnBnClickedSaveBmp_DM()
+void CTab_DM::SaveIMG()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CString szFileName = m_szFileName;
-	szFileName.AppendFormat(L"%s", m_szEncodeName);
-
-	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
-	}
+	pParent->SaveImage(path);
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
 	_tcscpy_s(m_resultPath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 
-	if (strcmp(mulpath, "") == 0) return;
+	if (!path.GetLength()) return;
 	auto size = m_pDepthMap->getEncodeSize();
-	m_pDepthMap->save(mulpath, 8, nullptr, size[_X], size[_Y]);
+	int ch = m_pDepthMap->getContext().waveNum;
+	m_pDepthMap->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
 
-	GetDlgItem(IDC_VIEW_DM_BMP)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
+	pParent->OpenExplorer(path);
 }
 
 void CTab_DM::OnBnClickedViewDmBmp()
@@ -566,78 +503,34 @@ void CTab_DM::OnBnClickedViewDmBmp()
 }
 
 
-void CTab_DM::OnBnClickedSaveOhc_DM()
+void CTab_DM::SaveOHC()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
-	}
+	pParent->SaveOHC(path);
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
+	_tcscpy_s(m_resultPath, path.GetBuffer());
 
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
-	if (m_pDepthMap->saveAsOhc(mulpath)) {
-
-		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
-	}
+	if (!path.GetLength()) return;
+	m_pDepthMap->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 }
 
-void CTab_DM::GetEncodeName(CString &szEncode)
-{
-	switch (m_idxEncode)
-	{
-	case 0: szEncode = L"Phase"; break;
-	case 1: szEncode = L"Amplitude"; break;
-	case 2: szEncode = L"Real"; break;
-	case 3: szEncode = L"SimpleNI"; break;
-	case 4: szEncode = L"Burckhardt"; break;
-	case 5: szEncode = L"TwoPhase"; break;
-	case 6: szEncode = L"SSB"; break;
-	case 7: szEncode = L"OffSSB"; break;
-	case 8: szEncode = L"Symmetrization"; break;
-	default: szEncode = L"Unknown"; break;
-	}
-}
 
 BOOL CTab_DM::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Amplitude");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Real");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Simple NI");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Burckhardt");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Two-Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Single-Side Band");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Off-SSB");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->AddString(L"Symmetrization");
-
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->SetCurSel(m_idxEncode);
-
 	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->AddString(L"Angular Spectrum");
 	((CComboBox*)GetDlgItem(IDC_PROPAGATION_METHOD_DM))->SetCurSel(m_idxPropagation);
-
-	// GeForce GPU 일 때만, 활성화
-	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
-	((CButton*)GetDlgItem(IDC_GPU_CHECK_DM))->EnableWindow(pDlg->IsGeforceGPU());
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -652,12 +545,6 @@ void CTab_DM::OnDestroy()
 	m_pDepthMap->release();
 }
 
-void CTab_DM::OnCbnSelchangeEncodeMethodDm()
-{
-	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
-	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_DM))->GetCurSel();
-}
 
 void CTab_DM::OnCbnSelchangePropagationMethodDm()
 {
@@ -669,15 +556,9 @@ void CTab_DM::OnCbnSelchangePropagationMethodDm()
 bool CTab_DM::CheckConfig()
 {
 	bool bChanged		= false;
-	double fieldLens	= m_fieldLens;
 	double nearDepth	= m_nearDepth;
 	double farDepth		= m_farDepth;
 	int numDepth		= m_numDepth;
-	double ppX			= m_pixelpitchX;
-	double ppY			= m_pixelpitchY;
-	unsigned int pnX	= m_pixelnumX;
-	unsigned int pnY	= m_pixelnumY;
-	double wavelength	= m_wavelength;
 	UpdateData(TRUE);
 
 	if (nearDepth != m_nearDepth || farDepth != m_farDepth) {
@@ -690,26 +571,6 @@ bool CTab_DM::CheckConfig()
 			numDepth, m_numDepth);
 		bChanged = true;
 	}
-	if (ppX != m_pixelpitchX || ppY != m_pixelpitchY) {
-		printf("\n*Changed Pixel Pitch*\nPixelPitchX: %lf -> %lf\nPixelPitchY: %lf -> %lf\n",
-			ppX, m_pixelpitchX, ppY, m_pixelpitchY);
-		bChanged = true;
-	}
-	if (pnX != m_pixelnumX || pnY != m_pixelnumY) {
-		printf("\n*Changed Pixel Num*\nPixelNumX: %u -> %u\nPixelNumY: %u -> %u\n",
-			pnX, m_pixelnumX, pnY, m_pixelnumY);
-		bChanged = true;
-	}
-	if (fieldLens != m_fieldLens) {
-		printf("\n*Changed Field Length*\nField Length: %lf -> %lf\n",
-			fieldLens, m_fieldLens);
-		bChanged = true;
-	}
-	if (wavelength != m_wavelength) {
-		printf("\n*Changed Wave Length*\nWave Length: %lf -> %lf\n",
-			wavelength, m_wavelength);
-		bChanged = true;
-	}
 
 	return bChanged;
 }
@@ -718,13 +579,80 @@ void CTab_DM::InitUI()
 {
 	GetDlgItem(IDC_READ_CONFIG_DM)->EnableWindow(TRUE);
 
-	GetDlgItem(IDC_LOAD_D_IMG)->EnableWindow(TRUE);
-	GetDlgItem(IDC_LOAD_RGB_IMG)->EnableWindow(TRUE);
+	GetDlgItem(IDC_LOAD_D_IMG_DM)->EnableWindow(TRUE);
+	GetDlgItem(IDC_LOAD_RGB_IMG_DM)->EnableWindow(TRUE);
 	m_bRGBimg = false;
 	m_bDimg = false;
+}
 
-	GetDlgItem(IDC_GENERATE_DM)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_DM)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SAVE_BMP_DM)->EnableWindow(FALSE);
-	GetDlgItem(IDC_SAVE_OHC_DM)->EnableWindow(FALSE);
+
+LRESULT CTab_DM::OnMsg(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == GENERATE) {
+		bool bChangedConfig = CheckConfig();
+
+		if (m_numDepth == 0) {
+			AfxMessageBox(L"Config value error - number of depth");
+			return FALSE;
+		}
+
+		OphDepthMapConfig config = m_pDepthMap->getConfig();
+		config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
+		config.far_depthmap = m_farDepth;
+		config.near_depthmap = m_nearDepth;
+		//config.fieldLength = ;
+		config.FLAG_CHANGE_DEPTH_QUANTIZATION = 1;
+		config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
+		config.num_of_depth = m_numDepth;
+		config.RANDOM_PHASE = 0;
+		m_pDepthMap->setConfig(config);
+
+		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+		m_pDepthMap->setMode(!dlg->UseGPGPU());
+		m_pDepthMap->setViewingWindow(dlg->UseVW());
+
+		dlg->ForegroundConsole();
+
+		Dialog_Progress progress;
+
+		BOOL bIsFinish = FALSE;
+
+		parammeter *pParam = new parammeter;
+		pParam->pGEN = m_pDepthMap;
+		pParam->pDialog = &progress;
+		progress.m_bPercent = true;
+		progress.m_iPercent = m_pDepthMap->getPercent();
+
+		CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
+		progress.DoModal();
+		progress.DestroyWindow();
+		MakeFileName();
+	}
+	else if (wParam == ENCODE) {
+		int idx = lParam;
+		switch (ophGen::ENCODE_FLAG(idx)) {
+		case ophGen::ENCODE_PHASE:
+		case ophGen::ENCODE_AMPLITUDE:
+		case ophGen::ENCODE_REAL:
+		case ophGen::ENCODE_SIMPLENI:
+		case ophGen::ENCODE_BURCKHARDT:
+		case ophGen::ENCODE_TWOPHASE:
+			((ophGen*)m_pDepthMap)->encoding(ophGen::ENCODE_FLAG(idx));
+			break;
+		case ophGen::ENCODE_SSB:
+		case ophGen::ENCODE_OFFSSB:
+			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
+			break;
+		case ophGen::ENCODE_SYMMETRIZATION:
+			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
+		}
+		m_pDepthMap->normalize();
+	}
+	else if (wParam == SAVE_IMG) {
+		SaveIMG();
+	}
+	else if (wParam == SAVE_OHC) {
+		SaveOHC();
+	}
+	return TRUE;
 }

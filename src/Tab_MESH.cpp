@@ -14,30 +14,23 @@
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
 #include "Dialog_Prompt.h"
+#define KEY_NAME L"TriMesh"
 
 IMPLEMENT_DYNAMIC(CTab_MESH, CDialogEx)
 
 CTab_MESH::CTab_MESH(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_DLG_MESH, pParent)
-	, m_fieldLens(0)
-	, m_objectsize(0)
-	, m_objectshiftX(0)
-	, m_objectshiftY(0)
-	, m_objectshiftZ(0)
+	, m_scaleX(0)
+	, m_scaleY(0)
+	, m_scaleZ(0)
 	, m_lampdirX(0)
 	, m_lampdirY(0)
 	, m_lampdirZ(0)
-	, m_pixelpitchX(0)
-	, m_pixelpitchY(0)
-	, m_pixelnumX(0)
-	, m_pixelnumY(0)
-	, m_wavelength(0)
 	, m_argParam()
 	, m_resultPath()
 	, m_bConfig(FALSE)
 	, m_bMeshData(FALSE)
 	, m_bEncode(FALSE)
-	, m_idxEncode(3)
 #ifdef TEST_MODE
 	, m_bTest(FALSE)
 #endif
@@ -52,21 +45,12 @@ CTab_MESH::~CTab_MESH()
 void CTab_MESH::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_FIELD_LENS, m_fieldLens);
-	DDX_Text(pDX, IDC_SCALE_X, m_objectsize);
-	DDX_Text(pDX, IDC_SCALE_Y, m_objectshiftX);
-	DDX_Text(pDX, IDC_SCALE_Z, m_objectshiftY);
-	DDX_Text(pDX, IDC_OFFSET_DEPTH, m_objectshiftZ);
-	DDX_Text(pDX, IDC_SCALE_Y2, m_lampdirX);
-	DDX_Text(pDX, IDC_SCALE_Z2, m_lampdirY);
-	DDX_Text(pDX, IDC_OFFSET_DEPTH2, m_lampdirZ);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_X, m_pixelpitchX);
-	DDX_Text(pDX, IDC_PIXEL_PITCH_Y, m_pixelpitchY);
-	DDX_Text(pDX, IDC_PIXEL_NUM_X, m_pixelnumX);
-	DDX_Text(pDX, IDC_PIXEL_NUM_Y, m_pixelnumY);
-	DDX_Text(pDX, IDC_WAVE_LENGTH, m_wavelength);
-	DDX_Control(pDX, IDC_GPU_CHECK_MESH, m_buttonGPU);
-	DDX_Control(pDX, IDC_TRANSFORM_VW, m_buttonViewingWindow);
+	DDX_Text(pDX, IDC_SCALE_X_MESH, m_scaleX);
+	DDX_Text(pDX, IDC_SCALE_Y_MESH, m_scaleY);
+	DDX_Text(pDX, IDC_SCALE_Z_MESH, m_scaleZ);
+	DDX_Text(pDX, IDC_LAMP_DIRECTION_X, m_lampdirX);
+	DDX_Text(pDX, IDC_LAMP_DIRECTION_Y, m_lampdirY);
+	DDX_Text(pDX, IDC_LAMP_DIRECTION_Z, m_lampdirZ);
 }
 
 
@@ -74,15 +58,13 @@ BEGIN_MESSAGE_MAP(CTab_MESH, CDialogEx)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_READ_CONFIG_MESH, &CTab_MESH::OnBnClickedReadConfigMesh)
 	ON_BN_CLICKED(IDC_LOAD_MESH, &CTab_MESH::OnBnClickedLoadMesh)
-	ON_BN_CLICKED(IDC_GENERATE_MESH, &CTab_MESH::OnBnClickedGenerateMesh)
-	ON_BN_CLICKED(IDC_SAVE_BMP_MESH, &CTab_MESH::OnBnClickedSaveBmpMesh)
-	ON_BN_CLICKED(IDC_SAVE_OHC_MESH, &CTab_MESH::OnBnClickedSaveOhcMesh)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_VIEW_MESH, &CTab_MESH::OnBnClickedViewMesh)
-	ON_BN_CLICKED(IDC_VIEW_MESH_BMP, &CTab_MESH::OnBnClickedViewMeshBmp)
-	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD_MESH, &CTab_MESH::OnCbnSelchangeEncodeMethodMesh)
-	ON_BN_CLICKED(IDC_ENCODING_MESH, &CTab_MESH::OnBnClickedEncodingMesh)
+	ON_MESSAGE(GENERATE, &CTab_MESH::OnMsg)
+	ON_MESSAGE(ENCODE, &CTab_MESH::OnMsg)
+	ON_MESSAGE(SAVE_IMG, &CTab_MESH::OnMsg)
+	ON_MESSAGE(SAVE_OHC, &CTab_MESH::OnMsg)
 END_MESSAGE_MAP()
 
 
@@ -144,68 +126,52 @@ void CTab_MESH::OnSize(UINT nType, int cx, int cy)
 void CTab_MESH::OnBnClickedReadConfigMesh()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"XML File (*.xml) |*.xml|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szCfgPath = AfxGetApp()->GetProfileString(KEY_NAME, L"Config Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szCfgPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"xml")) path = FileDialog.GetPathName();
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
-
-	if (!m_pMesh->readConfig(mulpath)) {
+	
+	if (!m_pMesh->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for Triangle Mesh.");
 		return;
 	}
 
 	auto context = m_pMesh->getContext();
-	m_fieldLens = m_pMesh->getFieldLens();
-	m_objectsize = m_pMesh->getObjSize();
-	m_objectshiftX = m_pMesh->getObjShift()[_X];
-	m_objectshiftY = m_pMesh->getObjShift()[_Y];
-	m_objectshiftZ = m_pMesh->getObjShift()[_Z];
+	m_scaleX = m_pMesh->getObjSize()[_X];
+	m_scaleY = m_pMesh->getObjSize()[_Y];
+	m_scaleZ = m_pMesh->getObjSize()[_Z];
 
 	m_lampdirX = m_pMesh->getIllumination()[_X];
 	m_lampdirY = m_pMesh->getIllumination()[_Y];
 	m_lampdirZ = m_pMesh->getIllumination()[_Z];
 
-	m_pixelpitchX = context.pixel_pitch[_X];
-	m_pixelpitchY = context.pixel_pitch[_Y];
-
-	m_pixelnumX = context.pixel_number[_X];
-	m_pixelnumY = context.pixel_number[_Y];
-
-	m_wavelength = context.wave_length[0];
-
 	//m_pPointCloud->getScale(scale);
 	//auto context = m_pPointCloud->getContext();
-
-	//m_scaleX = scale[_X];
-	//m_scaleY = scale[_Y];
-	//m_scaleZ = scale[_Z];
-	//m_offsetdepth = m_pPointCloud->getOffsetDepth();
-	//m_pixelpitchX = context.pixel_pitch[_X];
-	//m_pixelpitchY = context.pixel_pitch[_Y];
-	//m_pixelnumX = context.pixel_number[_X];
-	//m_pixelnumY = context.pixel_number[_Y];
-	//m_wavelength = *context.wave_length;
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SetWaveNum(context.waveNum);
+	pParent->SetWaveLength(context.wave_length);
+	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
+	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
+	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	AfxGetMainWnd()->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	m_bConfig = true;
-	if (m_bMeshData) GetDlgItem(IDC_GENERATE_MESH)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
@@ -214,43 +180,41 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 void CTab_MESH::OnBnClickedLoadMesh()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
 	LPTSTR szFilter = L"PLY File (*.ply) |*.ply|";
 
 	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szPlyPath = AfxGetApp()->GetProfileString(KEY_NAME, L"PLY Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szPlyPath;
 	CString path;
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ply")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
+		if (!ext.CompareNoCase(L"ply")) path = FileDialog.GetPathName();
 		else return;
 	}
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"PLY Path", path.Left(path.ReverseFind('\\') + 1));
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
 	_tcscpy_s(m_argParam, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-	if (strcmp(mulpath, "") == 0) return;
 
-	if (!m_pMesh->loadMeshData(mulpath, "ply"))
+	if (!m_pMesh->loadMeshData(CW2A(path), "ply"))
 	{
 		AfxMessageBox(L"it is not ply file for Mesh Data.");
 		return;
 	}
 
 	m_bMeshData = true;
-	if (m_bConfig) GetDlgItem(IDC_GENERATE_MESH)->EnableWindow(TRUE);
+	if (m_bConfig)
+		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 	GetDlgItem(IDC_VIEW_MESH)->EnableWindow(TRUE);
 
 	UpdateData(FALSE);
 }
-
 
 void CTab_MESH::OnBnClickedViewMesh()
 {
@@ -299,139 +263,27 @@ UINT CallFuncMESH(void* param)
 	return 1;
 }
 
-void CTab_MESH::OnBnClickedGenerateMesh()
+void CTab_MESH::SaveIMG()
 {
 	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	if (m_buttonViewingWindow.GetCheck() && m_fieldLens == 0.0) {
-		AfxMessageBox(L"Config value error - field lens");
-		return;
-	}
-	if (m_objectsize == 0.0) {
-		AfxMessageBox(L"Config value error - object size");
-		return;
-	}
-	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
-		AfxMessageBox(L"Config value error - pixel pitch");
-		return;
-	}
-	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
-		AfxMessageBox(L"Config value error - pixel number");
-		return;
-	}
-	if (m_wavelength == 0.0) {
-		AfxMessageBox(L"Config value error - wave length");
-		return;
-	}
-
-	auto context = m_pMesh->getContext();
-	m_pMesh->setObjSize(m_objectsize);
-	m_pMesh->setObjShift(vec3(m_objectshiftX, m_objectshiftY, m_objectshiftZ));
-	m_pMesh->setIllumination(vec3(m_lampdirX, m_lampdirY, m_lampdirZ));
-
-	context.pixel_pitch[_X] = m_pixelpitchX;
-	context.pixel_pitch[_Y] = m_pixelpitchY;
-
-	context.pixel_number[_X] = m_pixelnumX;
-	context.pixel_number[_Y] = m_pixelnumY;
-
-	context.wave_length[0] = m_wavelength;
-
-	m_pMesh->setMode(!m_buttonGPU.GetCheck());
-	m_pMesh->setViewingWindow(m_buttonViewingWindow.GetCheck());
-
-
-	GetDlgItem(IDC_SAVE_OHC_MESH)->EnableWindow(TRUE);
-	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(FALSE);
-	GetDlgItem(IDC_ENCODING_MESH)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
-
-	Dialog_Progress progress;
-
-	BOOL bIsFinish = FALSE;
-
-	parammeter *pParam = new parammeter;
-	pParam->pGEN = m_pMesh;
-	pParam->pDialog = &progress;
-
-	CWinThread* pThread = AfxBeginThread(CallFuncMESH, pParam);
-	progress.DoModal();
-	progress.DestroyWindow();
-
-	char szMsg[256] = { 0, };
-	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pMesh->getElapsedTime());
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
-	MakeFileName();
-}
-
-
-void CTab_MESH::OnBnClickedEncodingMesh()
-{
-	// TODO: Add your control notification handler code here
-	//auto dist = m_pMesh->getObjShift()[_Z];
-	//m_pMesh->waveCarry(0, 0.1, dist);
-	switch (ophGen::ENCODE_FLAG(m_idxEncode)) {
-	case ophGen::ENCODE_PHASE:
-	case ophGen::ENCODE_AMPLITUDE:
-	case ophGen::ENCODE_REAL:
-	case ophGen::ENCODE_SIMPLENI:
-	case ophGen::ENCODE_BURCKHARDT:
-	case ophGen::ENCODE_TWOPHASE:
-		m_pMesh->encoding(ophGen::ENCODE_FLAG(m_idxEncode));
-		break;
-	case ophGen::ENCODE_SSB:
-	case ophGen::ENCODE_OFFSSB:
-		m_pMesh->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
-		break;
-	}
-	m_pMesh->normalize();
-
-	GetDlgItem(IDC_SAVE_BMP_MESH)->EnableWindow(TRUE);
-
-	GetEncodeName(m_szEncodeName);
-}
-
-
-void CTab_MESH::OnBnClickedSaveBmpMesh()
-{
-	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
-
-	LPTSTR szFilter = L"BMP File (*.bmp) |*.bmp|";
-
-	CString szFileName = m_szFileName;
-	szFileName.AppendFormat(L"%s", m_szEncodeName);
-	
-	CFileDialog FileDialog(FALSE, NULL, szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"bmp")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".bmp";
-	}
+	pParent->SaveImage(path);
+	SetCurrentDirectory(szCurPath);
 
-	SetCurrentDirectory(current_path);
-
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
-
-	_tcscpy_s(widepath, path.GetBuffer());
 	_tcscpy_s(m_resultPath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
 
-	if (strcmp(mulpath, "") == 0) return;
+	if (!path.GetLength()) return;
+
 	ivec2 encode_size = m_pMesh->getEncodeSize();
-	m_pMesh->save(mulpath, 8, nullptr, encode_size[_X], encode_size[_Y]);
-
-	GetDlgItem(IDC_VIEW_MESH_BMP)->EnableWindow(TRUE);
-
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
+	int ch = m_pMesh->getContext().waveNum;
+	m_pMesh->save(CW2A(path), 8 * ch, nullptr, encode_size[_X], encode_size[_Y]);
+	
+	pParent->OpenExplorer(path);
 }
-
 
 void CTab_MESH::OnBnClickedViewMeshBmp()
 {
@@ -444,79 +296,35 @@ void CTab_MESH::OnBnClickedViewMeshBmp()
 	viewer.DestroyWindow();
 }
 
-
-void CTab_MESH::OnBnClickedSaveOhcMesh()
+void CTab_MESH::SaveOHC()
 {
 	// TODO: Add your control notification handler code here
-	TCHAR current_path[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, current_path);
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
 
-	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
 
-	CFileDialog FileDialog(FALSE, NULL, m_szFileName, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
 	CString path;
-	if (FileDialog.DoModal() == IDOK)
-	{
-		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"ohc")) path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName();
-		else path = FileDialog.GetFolderPath() + L"\\" + FileDialog.GetFileName() + L".ohc";
-	}
+	pParent->SaveOHC(path);
 
-	SetCurrentDirectory(current_path);
+	SetCurrentDirectory(szCurPath);
 
-	TCHAR widepath[MAX_PATH] = { 0 };
-	char mulpath[MAX_PATH] = { 0 };
+	_tcscpy_s(m_resultPath, path.GetBuffer());
 
-	_tcscpy_s(widepath, path.GetBuffer());
-	WideCharToMultiByte(CP_ACP, 0, widepath, MAX_PATH, mulpath, MAX_PATH, NULL, NULL);
-
-	if (strcmp(mulpath, "") == 0) return;
-	if (!m_pMesh->saveAsOhc(mulpath)) {
-		MessageBox(L"Save failed", L"Error", MB_ICONWARNING);
-	}
-	else {
-
-		((COpenholoRefAppDlg *)AfxGetMainWnd())->OpenExplorer(path);
-	}
+	if (!path.GetLength()) return;
+	m_pMesh->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 }
-
-void CTab_MESH::GetEncodeName(CString &szEncode)
-{
-	switch (m_idxEncode)
-	{
-	case 0: szEncode = L"Phase"; break;
-	case 1: szEncode = L"Amplitude"; break;
-	case 2: szEncode = L"Real"; break;
-	case 3: szEncode = L"SimpleNI"; break;
-	case 4: szEncode = L"Burckhardt"; break;
-	case 5: szEncode = L"TwoPhase"; break;
-	case 6: szEncode = L"SSB"; break;
-	case 7: szEncode = L"OffSSB"; break;
-	default: szEncode = L"Unknown"; break;
-	}
-}
-
 
 BOOL CTab_MESH::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Amplitude");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Real");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Simple NI");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Burckhardt");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Two-Phase");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Single-Side Band");
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->AddString(L"Off-SSB");
-
-	((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->SetCurSel(m_idxEncode);
-
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
-
 
 void CTab_MESH::OnDestroy()
 {
@@ -524,15 +332,6 @@ void CTab_MESH::OnDestroy()
 
 	// TODO: Add your message handler code here
 	m_pMesh->release();
-}
-
-
-void CTab_MESH::OnCbnSelchangeEncodeMethodMesh()
-{
-	// TODO: Add your control notification handler code here
-	UpdateData(TRUE);
-
-	m_idxEncode = ((CComboBox*)GetDlgItem(IDC_ENCODE_METHOD_MESH))->GetCurSel();
 }
 
 void CTab_MESH::MakeFileName(CString szAppend)
@@ -545,6 +344,55 @@ void CTab_MESH::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%dch_", m_pMesh->getContext().waveNum);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pMesh->getContext().pixel_number[_X], m_pMesh->getContext().pixel_number[_Y]);
 	m_szFileName.AppendFormat(L"f%d_", m_pMesh->getNumMesh());
-	m_szFileName.AppendFormat(L"%s_", m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
-	m_szFileName.AppendFormat(L"%s", m_buttonViewingWindow.GetCheck() ? L"VW_" : L"");
+}
+
+LRESULT CTab_MESH::OnMsg(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == GENERATE) {
+		UpdateData(TRUE);
+		auto context = m_pMesh->getContext();
+
+		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+		m_pMesh->setMode(!dlg->UseGPGPU());
+		dlg->ForegroundConsole();
+
+		Dialog_Progress progress;
+
+		BOOL bIsFinish = FALSE;
+
+		parammeter *pParam = new parammeter;
+		pParam->pGEN = m_pMesh;
+		pParam->pDialog = &progress;
+
+		CWinThread* pThread = AfxBeginThread(CallFuncMESH, pParam);
+		progress.DoModal();
+		progress.DestroyWindow();
+	}
+	else if (wParam == ENCODE) {
+		int idx = lParam;
+		switch (ophGen::ENCODE_FLAG(idx)) {
+		case ophGen::ENCODE_PHASE:
+		case ophGen::ENCODE_AMPLITUDE:
+		case ophGen::ENCODE_REAL:
+		case ophGen::ENCODE_SIMPLENI:
+		case ophGen::ENCODE_BURCKHARDT:
+		case ophGen::ENCODE_TWOPHASE:
+			((ophGen*)m_pMesh)->encoding(ophGen::ENCODE_FLAG(idx));
+			break;
+		case ophGen::ENCODE_SSB:
+		case ophGen::ENCODE_OFFSSB:
+			m_pMesh->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
+			break;
+		case ophGen::ENCODE_SYMMETRIZATION:
+			m_pMesh->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
+		}
+		m_pMesh->normalize();
+	}
+	else if (wParam == SAVE_IMG) {
+		SaveIMG();
+	}
+	else if (wParam == SAVE_OHC) {
+		SaveOHC();
+	}
+	return TRUE;
 }

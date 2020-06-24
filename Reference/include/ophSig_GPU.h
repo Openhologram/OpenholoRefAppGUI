@@ -43,43 +43,37 @@
 //
 //M*/
 
-#ifndef __OphReconstruction_h
-#define __OphReconstruction_h
+#ifndef __ophSig_GPU_H_
+#define __ophSig_GPU_H_
 
-#include "Openholo.h"
+#include	<cufft.h>
+#include <npp.h>
+//#include	"ophSig.h"
+#include <cuda_profiler_api.h>
 
-#ifdef RECON_EXPORT
-#define RECON_DLL __declspec(dllexport)
-#else
-#define RECON_DLL __declspec(dllimport)
-#endif
+#include <cuda_runtime.h>
 
+cufftDoubleComplex* complex_holog_gpu;
 
+cudaStream_t streamLF;
 
-/**
-* @ingroup rec
-* @brief
-* @author
-*/
-class RECON_DLL ophRec : public Openholo
+extern "C"
 {
-public:
-	/**
-	* @brief Constructor
-	*/
-	explicit ophRec(void);
+	void cudaCvtFieldToCuFFT(Complex<Real> *src_data, cufftDoubleComplex *dst_data, int nx, int ny);
+	void cudaCvtCuFFTToField(cufftDoubleComplex *src_data, Complex<Real> *dst_data, int nx, int ny);
+	void cudaCuFFT(cufftHandle* plan, cufftDoubleComplex *src_data, cufftDoubleComplex *dst_data, int nx, int ny, int direction);
+	
+	void cudaCuIFFT(cufftHandle* plan, cufftDoubleComplex *src_data, cufftDoubleComplex *dst_data, int nx, int ny, int direction);
+	
+	
+	void cudaCvtOFF( Complex<Real> *src_data, Real *dst_data, ophSigConfig *device_config,  int nx, int ny, Real wl,Complex<Real> *F, Real *angle);
+	void cudaCvtHPO(CUstream_st* stream, cufftDoubleComplex *src_data, cufftDoubleComplex *dst_data, ophSigConfig *device_config, Complex<Real> *F,int nx, int ny, Real Rephase, Real Imphase);
+	void cudaCvtCAC(cufftDoubleComplex *src_data, cufftDoubleComplex *dst_data,  Complex<Real> *FFZP, ophSigConfig *device_config, int nx, int ny,Real sigmaf, Real radius);
 
-protected:
-	/**
-	* @brief Destructor
-	*/
-	virtual ~ophRec(void);
+	void cudaPropagation(cufftDoubleComplex *src_data, cufftDoubleComplex *dst_data, Complex<Real> *FH, ophSigConfig *device_config, int nx, int ny, Real sigmaf);
+	double cudaGetParamSF(cufftHandle *fftplan, cufftDoubleComplex *src_data,  cufftDoubleComplex *temp_data, cufftDoubleComplex *dst_data, Real *f, Complex<Real> *FH, ophSigConfig *device_config, int nx, int ny, float zMax, float zMin, int sampN, float th, Real wl);
+	void cudaGetParamAT1(Complex<Real> *src_data, Complex<Real> *Flr, Complex<Real> *Fli, Complex<Real> *G, ophSigConfig *device_config, int nx, int ny, Real_t NA_g, Real wl);
+	void cudaGetParamAT2(Complex<Real> *Flr, Complex<Real> *Fli, Complex<Real> *G, Complex<Real> *temp_data, int nx, int ny);
 
-protected:
-	/**
-	* @brief Pure virtual function for override in child classes
-	*/
-	virtual void ophFree(void) = 0;
-};
-
-#endif // !__OphReconstruction_h
+}
+#endif

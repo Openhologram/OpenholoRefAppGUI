@@ -28,47 +28,35 @@ public:
 	afx_msg void OnBnClickedReadConfigMesh();
 	afx_msg void OnBnClickedLoadMesh();
 	afx_msg void OnBnClickedViewMesh();
-	afx_msg void OnBnClickedGenerateMesh();
-	afx_msg void OnBnClickedEncodingMesh();
-	afx_msg void OnBnClickedSaveBmpMesh();
-	afx_msg void OnBnClickedViewMeshBmp();
-	afx_msg void OnBnClickedSaveOhcMesh();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg void OnCbnSelchangeEncodeMethodMesh();
+	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
+	ophTri* GetInstance() { return m_pMesh; }
+	void SaveIMG();
+	void SaveOHC();
 	CString m_szFileName;
 	CString m_szEncodeName;
 	bool m_bConfig;
 	bool m_bMeshData;
 	bool m_bEncode;
-
-	int m_idxEncode;
+	afx_msg void OnBnClickedViewMeshBmp();
 
 	ophTri		*m_pMesh;
 
 	TCHAR		m_argParam[MAX_PATH];
 	TCHAR		m_resultPath[MAX_PATH];
 	
-	double m_fieldLens;
-	double m_objectsize;
-	double m_objectshiftX;
-	double m_objectshiftY;
-	double m_objectshiftZ;
+	double m_scaleX;
+	double m_scaleY;
+	double m_scaleZ;
 	double m_lampdirX;
 	double m_lampdirY;
 	double m_lampdirZ;
-	double m_pixelpitchX;
-	double m_pixelpitchY;
-	double m_pixelnumX;
-	double m_pixelnumY;
-	double m_wavelength;
-	CButton m_buttonGPU;
-	CButton m_buttonViewingWindow;
 #ifdef TEST_MODE
 	BOOL m_bTest;
 #endif

@@ -43,43 +43,68 @@
 //
 //M*/
 
-#ifndef __OphReconstruction_h
-#define __OphReconstruction_h
+#ifndef __ophSimulator_h
+#define __ophSimulator_h
 
-#include "Openholo.h"
+#define _USE_MATH_DEFINES
 
-#ifdef RECON_EXPORT
-#define RECON_DLL __declspec(dllexport)
-#else
-#define RECON_DLL __declspec(dllimport)
+#include "ophGen.h"
+#include "ophPointCloud.h"
+#include <vector>
+
+//Build Option : Multi Core Processing (OpenMP)
+#ifdef _OPENMP
+#include <omp.h>
 #endif
 
+using namespace oph;
 
-
-/**
-* @ingroup rec
-* @brief
-* @author
-*/
-class RECON_DLL ophRec : public Openholo
+class GEN_DLL ophSimulator : public ophGen
 {
 public:
 	/**
 	* @brief Constructor
+	* @details Initialize variables.
 	*/
-	explicit ophRec(void);
-
+	explicit ophSimulator(void);
+	/**
+	* @overload
+	*/
 protected:
 	/**
 	* @brief Destructor
 	*/
-	virtual ~ophRec(void);
+	virtual ~ophSimulator(void);
 
-protected:
-	/**
-	* @brief Pure virtual function for override in child classes
-	*/
-	virtual void ophFree(void) = 0;
+public:
+	int AddPoint(vec3 point, Real amplitude = 0.5);
+	int AddPoint(Real x, Real y, Real z, Real amplitude = 0.5);
+	int AddPlane(Real theta, Real phi);
+	bool SetResolution(ivec2 resolution);
+	bool SetResolution(int width, int height);
+	bool SetPixelPitch(vec2 size);
+	bool SetPixelPitch(Real width, Real height);
+	bool SetWaveLength(Real waveLength);
+	bool SetDistance(Real distance);
+	bool SetWaveNum(int nNum);
+	bool Save(char *path);
+	bool Encode(int option);
+	void Init();
+	bool GenerateHologram();
+	template<typename T>
+	void Normalize(T *src, uchar *dst, int width, int height);
+
+private:
+	ophPointCloud *m_pPointCloud;
+	uchar *m_pNormalize;
+	int m_nPoints;
+	int m_nPlanes;
+	Real m_distance;
+	vector<vec3> m_vecPoints;
+	vector<vec2> m_vecPlanes;
+	vector<Real> m_vecAmplitude;
+	bool m_bHasPoint;
+	bool m_bHasPlane;
 };
 
-#endif // !__OphReconstruction_h
+#endif // !__ophSimulator_h

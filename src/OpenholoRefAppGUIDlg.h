@@ -6,12 +6,21 @@
 #include "afxcmn.h"
 #include "afxwin.h"
 #include "Time.h"
+#include "Option.h"
+#include <vector>
 class CTab_PC;
 class CTab_DM;
 class CTab_LF;
 class CTab_MESH;
 class CTab_WRP;
+class CTab_IFTA;
 
+#define GENERATE	WM_USER + 1
+#define ENCODE		WM_USER + 2
+#define SAVE_IMG	WM_USER + 3
+#define SAVE_OHC	WM_USER + 4
+#define LOAD_CFG	WM_USER + 5
+#define LOAD_DATA	WM_USER + 6
 
 // COpenholoRefAppDlg dialog
 class COpenholoRefAppDlg : public CDialogEx
@@ -47,21 +56,43 @@ protected:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnBnClickedLogCheck();
 	afx_msg void OnBnClickedAlwaysCheck();
+	afx_msg void OnMoving(UINT fwSide, LPRECT pRect);
+	afx_msg void OnBnClickedGenerate();
+	afx_msg void OnBnClickedSaveImg();
+	afx_msg void OnBnClickedEncoding();
+	afx_msg void OnBnClickedSaveOhc();
+	afx_msg LRESULT OnFlip(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnRotate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnReceive(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnBnClickedButtonExpand();
+	afx_msg void OnCbnSelchangeEncodeMethod();
 	DECLARE_MESSAGE_MAP()
 
-	void initTabs(void);
 
 public:
+	void initTabs(void);
 	void OpenExplorer(CString szPath);
 	void ForegroundConsole();
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
 	BOOL IsGeforceGPU();
 	void report(char *szMsg);
 	CString GetFileName();
+	CString GetFileNameExt();
+	void initUI();
+	bool SaveImage(CString &path);
+	bool SaveOHC(CString &path);
+	double GetShiftX() { return m_shiftX; }
+	double GetShiftY() { return m_shiftY; }
+	void MoveOptionDlg();
+	double GetRotate() { return m_rotate; }
+	int GetFlip() { return m_flip; }
+	bool UseGPGPU() { return m_buttonGPU.GetCheck(); }
+	bool UseVW() { return m_buttonViewingWindow.GetCheck(); }
 
 	CImage		m_imgOPH_LOGO, m_imgKETI_LOGO;
 	CRect		m_rcOPH, m_rcKETI;
 	BOOL		m_bClickOPH, m_bClickKETI;
+	CStatic		m_szImgPath;
 
 	CStatic m_picOphLogo;
 	CStatic m_picKetiLogo;
@@ -70,13 +101,65 @@ public:
 	IStream		*pStreamOph;
 	IStream		*pStreamKeti;
 
+	int			m_iEncode;
+
+	double		m_rotate;
+	int			m_flip;
+
 	CTab_PC		*pTabPC;
 	CTab_DM		*pTabDM;
 	CTab_LF		*pTabLF;
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
+	CTab_IFTA	*pTabIFTA;
+	Option		*m_option;
+
 	CButton		m_buttonLog;
 	CButton		m_buttonExplorer;
+	CButton		m_buttonGenerate;
+	CButton		m_buttonEncode;
+	CButton		m_buttonSaveBmp;
+	CButton		m_buttonSaveOhc;
+	CButton		m_buttonAlways;
+	CButton		m_buttonViewImg;
+	CComboBox	m_encodeMethod;
+	CButton		m_buttonGPU;
+	CButton		m_buttonViewingWindow;
+	std::vector<CDialogEx *> m_vector;
+
 	// 항상 위에 표시
-	CButton m_buttonAlways;
+	double			m_shiftX;
+	double			m_shiftY;
+	double			m_shiftZ;
+	double			m_pixelpitchX;
+	double			m_pixelpitchY;
+	unsigned int	m_pixelnumX;
+	unsigned int	m_pixelnumY;
+	double			m_wavelength[3];
+	int				m_nWave;
+	void SetShift(double shiftX, double shiftY, double shiftZ) {
+		m_shiftX = shiftX;
+		m_shiftY = shiftY;
+		m_shiftZ = shiftZ;
+	}
+
+	void SetPixelPitch(double pitchX, double pitchY) {
+		m_pixelpitchX = pitchX;
+		m_pixelpitchY = pitchY;
+	}
+
+	void SetPixelNum(unsigned int width, unsigned int height) {
+		m_pixelnumX = width;
+		m_pixelnumY = height;
+	}
+
+	void SetWaveNum(int nWave) {
+		m_nWave = nWave > 3 ? 3 : nWave;
+	}
+
+	void SetWaveLength(double *wave) {
+		for (int i = 0; i < m_nWave && i < 3; i++) {
+			m_wavelength[i] = wave[i];
+		}
+	}
 };

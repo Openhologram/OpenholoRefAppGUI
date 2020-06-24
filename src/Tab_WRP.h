@@ -28,19 +28,18 @@ public:
 	afx_msg void OnBnClickedReadConfigWrp();
 	afx_msg void OnBnClickedLoadPcWrp();
 	afx_msg void OnBnClickedViewWrp();
-	afx_msg void OnBnClickedGenerateWrp();
 	afx_msg void OnBnClickedViewWrpBmp();
-	afx_msg void OnBnClickedSaveBmpWrp();
-	afx_msg void OnBnClickedSaveOhcWrp();
+	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	void SaveIMG();
+	void SaveOHC();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg void OnCbnSelchangeEncodeMethodWrp();
-	afx_msg void OnBnClickedEncodingWrp();
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
+	ophWRP* GetInstance() { return m_pWRP; }
 	CString m_szFileName;
 	CString m_szEncodeName;
 	ophWRP	*m_pWRP;
@@ -48,26 +47,17 @@ public:
 	bool	m_bPC;
 	bool	m_bEncode;
 
-	int		m_idxEncode;
 
 	TCHAR	m_argParam[MAX_PATH];
 	TCHAR	m_resultPath[MAX_PATH];
 
-	double m_fieldLens;
 	double m_scaleX;
 	double m_scaleY;
 	double m_scaleZ;
 	double m_numofWRP;
 	double m_locationWRP;
 	double m_distance;
-	double m_pixelpitchX;
-	double m_pixelpitchY;
-	double m_pixelnumX;
-	double m_pixelnumY;
-	double m_wavelength;
 
-	CButton m_buttonGPU;
-	CButton m_buttonViewingWindow;
 #ifdef TEST_MODE
 	BOOL m_bTest;
 #endif
