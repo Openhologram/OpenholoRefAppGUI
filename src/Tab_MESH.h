@@ -30,21 +30,22 @@ public:
 	afx_msg void OnBnClickedViewMesh();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnGenerate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnBnClickedViewMeshBmp();
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
 	ophTri* GetInstance() { return m_pMesh; }
-	void SaveIMG();
-	void SaveOHC();
 	CString m_szFileName;
 	CString m_szEncodeName;
 	bool m_bConfig;
 	bool m_bMeshData;
 	bool m_bEncode;
-	afx_msg void OnBnClickedViewMeshBmp();
 
 	ophTri		*m_pMesh;
 

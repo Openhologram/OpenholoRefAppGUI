@@ -84,6 +84,9 @@
     <ClInclude Include="Option.h">
       <Filter>0_MainFrame</Filter>
     </ClInclude>
+    <ClInclude Include="Tab_RECON.h">
+      <Filter>1_Tab</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenholoRefAppGUI.cpp">
@@ -133,6 +136,9 @@
     </ClCompile>
     <ClCompile Include="Option.cpp">
       <Filter>0_MainFrame</Filter>
+    </ClCompile>
+    <ClCompile Include="Tab_RECON.cpp">
+      <Filter>1_Tab</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

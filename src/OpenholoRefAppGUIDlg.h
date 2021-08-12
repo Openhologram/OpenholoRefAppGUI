@@ -14,6 +14,7 @@ class CTab_LF;
 class CTab_MESH;
 class CTab_WRP;
 class CTab_IFTA;
+class CTab_RECON;
 
 #define GENERATE	WM_USER + 1
 #define ENCODE		WM_USER + 2
@@ -21,6 +22,7 @@ class CTab_IFTA;
 #define SAVE_OHC	WM_USER + 4
 #define LOAD_CFG	WM_USER + 5
 #define LOAD_DATA	WM_USER + 6
+#define RECONSTRUCT	WM_USER + 7
 
 // COpenholoRefAppDlg dialog
 class COpenholoRefAppDlg : public CDialogEx
@@ -58,6 +60,7 @@ protected:
 	afx_msg void OnBnClickedAlwaysCheck();
 	afx_msg void OnMoving(UINT fwSide, LPRECT pRect);
 	afx_msg void OnBnClickedGenerate();
+	afx_msg void OnBnClickedReconstruct();
 	afx_msg void OnBnClickedSaveImg();
 	afx_msg void OnBnClickedEncoding();
 	afx_msg void OnBnClickedSaveOhc();
@@ -88,6 +91,8 @@ public:
 	int GetFlip() { return m_flip; }
 	bool UseGPGPU() { return m_buttonGPU.GetCheck(); }
 	bool UseVW() { return m_buttonViewingWindow.GetCheck(); }
+	void ReloadContents();
+
 
 	CImage		m_imgOPH_LOGO, m_imgKETI_LOGO;
 	CRect		m_rcOPH, m_rcKETI;
@@ -98,10 +103,13 @@ public:
 	CStatic m_picKetiLogo;
 
 	CTabCtrl	m_Tab;
+	CComboBox	m_Algo;
+	CComboBox	m_AlgoRecon;
 	IStream		*pStreamOph;
 	IStream		*pStreamKeti;
 
 	int			m_iEncode;
+	int			m_iPassband;
 
 	double		m_rotate;
 	int			m_flip;
@@ -112,17 +120,20 @@ public:
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
 	CTab_IFTA	*pTabIFTA;
+	CTab_RECON	*pTabRECON;
 	Option		*m_option;
 
 	CButton		m_buttonLog;
 	CButton		m_buttonExplorer;
 	CButton		m_buttonGenerate;
+	CButton		m_buttonReconstruct;
 	CButton		m_buttonEncode;
 	CButton		m_buttonSaveBmp;
 	CButton		m_buttonSaveOhc;
 	CButton		m_buttonAlways;
 	CButton		m_buttonViewImg;
 	CComboBox	m_encodeMethod;
+	CComboBox	m_encodePassband;
 	CButton		m_buttonGPU;
 	CButton		m_buttonViewingWindow;
 	std::vector<CDialogEx *> m_vector;
@@ -162,4 +173,8 @@ public:
 			m_wavelength[i] = wave[i];
 		}
 	}
+	afx_msg void OnCbnSelchangeComboAlgorithm();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnCbnSelchangeComboAlgorithmRecon();
+	afx_msg void OnCbnSelchangeEncodePassband();
 };

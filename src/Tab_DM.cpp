@@ -61,10 +61,10 @@ BEGIN_MESSAGE_MAP(CTab_DM, CDialogEx)
 	//ON_BN_CLICKED(IDC_VIEW_DM_BMP, &CTab_DM::OnBnClickedViewDmBmp)
 	ON_BN_CLICKED(IDC_VIEW_IMG_DM, &CTab_DM::OnBnClickedViewDmImg)
 	ON_CBN_SELCHANGE(IDC_PROPAGATION_METHOD_DM, &CTab_DM::OnCbnSelchangePropagationMethodDm)
-	ON_MESSAGE(GENERATE, &CTab_DM::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_DM::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_DM::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_DM::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_DM::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_DM::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_DM::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_DM::OnSaveOHC)
 END_MESSAGE_MAP()
 
 
@@ -310,10 +310,10 @@ void CTab_DM::OnBnClickedViewDm()
 UINT CallFuncDM(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	((ophDepthMap*)pParam->pGEN)->generateHologram();
+	((ophDepthMap*)pParam->pInst)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	ophDepthMap *pDepth = ((ophDepthMap *)pParam->pGEN);
+	ophDepthMap *pDepth = ((ophDepthMap *)pParam->pInst);
 	Complex<Real> **pp = pDepth->getComplexField();
 	
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
@@ -335,12 +335,13 @@ void CTab_DM::Generate()
 	BOOL bIsFinish = FALSE;
 
 	parammeter *pParam = new parammeter;
-	pParam->pGEN = m_pDepthMap;
+	pParam->pInst = m_pDepthMap;
 	pParam->pDialog = &progress;
 	progress.m_bPercent = true;
-	progress.m_iPercent = m_pDepthMap->getPercent();
+	progress.m_iPercent = m_pDepthMap->getProgress();
 
 	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
+	progress.m_bGen = true;
 	progress.DoModal();
 	progress.DestroyWindow();
 
@@ -404,7 +405,7 @@ void CTab_DM::OnBnClickedGenerate_DM()
 	BOOL bIsFinish = FALSE;
 
 	parammeter *pParam = new parammeter;
-	pParam->pGEN = m_pDepthMap;
+	pParam->pInst = m_pDepthMap;
 	pParam->pDialog = &progress;
 	progress.m_bPercent = true;
 	progress.m_iPercent = m_pDepthMap->getPercent();
@@ -445,8 +446,6 @@ void CTab_DM::OnBnClickedEncodingDm()
 		case ophGen::ENCODE_OFFSSB:
 			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(m_idxEncode), ophGen::SSB_TOP);
 			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(m_idxEncode));
 		}
 		m_pDepthMap->normalize();
 	//}
@@ -468,28 +467,6 @@ void CTab_DM::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%s_", m_idxPropagation == 0 ? L"AS" : L"Unknown");
 }
 
-void CTab_DM::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveImage(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	auto size = m_pDepthMap->getEncodeSize();
-	int ch = m_pDepthMap->getContext().waveNum;
-	m_pDepthMap->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
-
-	pParent->OpenExplorer(path);
-}
 
 void CTab_DM::OnBnClickedViewDmBmp()
 {
@@ -501,28 +478,6 @@ void CTab_DM::OnBnClickedViewDmBmp()
 
 	viewer.DestroyWindow();
 }
-
-
-void CTab_DM::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pDepthMap->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
-}
-
 
 BOOL CTab_DM::OnInitDialog()
 {
@@ -586,73 +541,122 @@ void CTab_DM::InitUI()
 }
 
 
-LRESULT CTab_DM::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_DM::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		bool bChangedConfig = CheckConfig();
+	UpdateData(TRUE);
+	bool bChangedConfig = CheckConfig();
 
-		if (m_numDepth == 0) {
-			AfxMessageBox(L"Config value error - number of depth");
-			return FALSE;
-		}
-
-		OphDepthMapConfig config = m_pDepthMap->getConfig();
-		config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
-		config.far_depthmap = m_farDepth;
-		config.near_depthmap = m_nearDepth;
-		//config.fieldLength = ;
-		config.FLAG_CHANGE_DEPTH_QUANTIZATION = 1;
-		config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
-		config.num_of_depth = m_numDepth;
-		config.RANDOM_PHASE = 0;
-		m_pDepthMap->setConfig(config);
-
-		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-		m_pDepthMap->setMode(!dlg->UseGPGPU());
-		m_pDepthMap->setViewingWindow(dlg->UseVW());
-
-		dlg->ForegroundConsole();
-
-		Dialog_Progress progress;
-
-		BOOL bIsFinish = FALSE;
-
-		parammeter *pParam = new parammeter;
-		pParam->pGEN = m_pDepthMap;
-		pParam->pDialog = &progress;
-		progress.m_bPercent = true;
-		progress.m_iPercent = m_pDepthMap->getPercent();
-
-		CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();
-		MakeFileName();
+	if (m_numDepth == 0) {
+		AfxMessageBox(L"Config value error - number of depth");
+		return FALSE;
 	}
-	else if (wParam == ENCODE) {
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pDepthMap)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pDepthMap->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pDepthMap->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
+
+	OphDepthMapConfig config = m_pDepthMap->getConfig();
+	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
+	config.far_depthmap = m_farDepth;
+	config.near_depthmap = m_nearDepth;
+	//config.fieldLength = ;
+	config.FLAG_CHANGE_DEPTH_QUANTIZATION = 1;
+	config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
+	config.num_of_depth = m_numDepth;
+	config.RANDOM_PHASE = 0;
+	m_pDepthMap->setConfig(config);
+
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	m_pDepthMap->setMode(!dlg->UseGPGPU());
+	m_pDepthMap->setViewingWindow(dlg->UseVW());
+
+	dlg->ForegroundConsole();
+
+	Dialog_Progress progress;
+
+	BOOL bIsFinish = FALSE;
+
+	parammeter *pParam = new parammeter;
+	pParam->pInst = m_pDepthMap;
+	pParam->pDialog = &progress;
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pDepthMap->getProgress();
+
+	CWinThread* pThread = AfxBeginThread(CallFuncDM, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+	MakeFileName();
+	return TRUE;
+}
+
+LRESULT CTab_DM::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pDepthMap->Shift(shiftX, shiftY);
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pDepthMap)->encoding(ophGen::ENCODE_FLAG(idx));
 		m_pDepthMap->normalize();
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pDepthMap->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		m_pDepthMap->normalize();
+		break;
 	}
-	else if (wParam == SAVE_IMG) {
-		SaveIMG();
-	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+
+	
+	return TRUE;
+}
+
+LRESULT CTab_DM::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveImage(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	auto size = m_pDepthMap->getEncodeSize();
+	int ch = m_pDepthMap->getContext().waveNum;
+	m_pDepthMap->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
+
+	pParent->OpenExplorer(path);
+	return TRUE;
+}
+
+
+LRESULT CTab_DM::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pDepthMap->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 	return TRUE;
 }

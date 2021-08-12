@@ -68,10 +68,10 @@ BEGIN_MESSAGE_MAP(CTab_PC, CDialogEx)
 	ON_BN_CLICKED(IDC_VIEW_PC, &CTab_PC::OnBnClickedViewPc)
 	//ON_WM_KEYDOWN()
 	ON_CBN_SELCHANGE(IDC_DIFF_METHOD_PC, &CTab_PC::OnCbnSelchangeDiffMethodPc)
-	ON_MESSAGE(GENERATE, &CTab_PC::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_PC::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_PC::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_PC::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_PC::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_PC::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_PC::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_PC::OnSaveOHC)
 END_MESSAGE_MAP()
 
 // CTab_PC message handlers
@@ -141,7 +141,7 @@ void CTab_PC::OnBnClickedReadConfig_PC()
 	if (FileDialog.DoModal() == IDOK)
 	{
 		CString ext = FileDialog.GetFileExt();
-		if (!ext.CompareNoCase(L"xml")) 
+		if (!ext.CompareNoCase(L"xml"))
 			path = FileDialog.GetPathName();
 		else return;
 	}
@@ -192,7 +192,7 @@ void CTab_PC::OnBnClickedLoadPc()
 	{
 		CString ext = FileDialog.GetFileExt();
 		if (!ext.CompareNoCase(L"ply"))
-			path = FileDialog.GetPathName(); 
+			path = FileDialog.GetPathName();
 		else return;
 	}
 
@@ -200,7 +200,7 @@ void CTab_PC::OnBnClickedLoadPc()
 	if (!path.GetLength()) return;
 	AfxGetApp()->WriteProfileString(KEY_NAME, L"PLY Path", path.Left(path.ReverseFind('\\') + 1));
 
-	if (m_pPointCloud->loadPointCloud(CW2A(path)) == -1) 
+	if (m_pPointCloud->loadPointCloud(CW2A(path)) == -1)
 	{
 		AfxMessageBox(L"it is not ply file for PointCloud.");
 		return;
@@ -250,11 +250,11 @@ void CTab_PC::OnBnClickedViewPc()
 UINT CallFunc(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	((ophPointCloud *)pParam->pGEN)->generateHologram(pParam->flag);
+	((ophPointCloud *)pParam->pInst)->generateHologram(pParam->flag);
 	pParam->pDialog->m_bFinished = TRUE;
-	
+
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-	ophPointCloud *pPC = ((ophPointCloud *)pParam->pGEN);
+	ophPointCloud *pPC = ((ophPointCloud *)pParam->pInst);
 	Complex<Real> **pp = pPC->getComplexField();
 	for (uint i = 0; i < pPC->getContext().waveNum; i++)
 		printf("=> Complex Field[%d][0] = %.15e / %.15e\n", i, pp[i][0][_RE], pp[i][0][_IM]);
@@ -277,32 +277,6 @@ void CTab_PC::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"%s_", m_idxDiff == 0 ? L"RS" : L"Fresnel");
 }
 
-BOOL CTab_PC::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveImage(path);
-	SetCurrentDirectory(szCurPath);
-	if (!path.GetLength()) return FALSE;
-
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-	auto size = m_pPointCloud->getEncodeSize();
-	int ch = m_pPointCloud->getContext().waveNum;
-	auto context = m_pPointCloud->getContext();	
-
-	m_pPointCloud->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
-	
-	pParent->OpenExplorer(path);
-	
-	return TRUE;
-}
-
-
 void CTab_PC::OnBnClickedViewPcBmp()
 {
 	// TODO: Add your control notification handler code here
@@ -314,27 +288,6 @@ void CTab_PC::OnBnClickedViewPcBmp()
 	viewer.DestroyWindow();
 }
 
-
-void CTab_PC::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pPointCloud->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
-}
-
 BOOL CTab_PC::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -343,8 +296,7 @@ BOOL CTab_PC::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"R-S diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"Fresnel diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->SetCurSel(m_idxDiff);
-	
-	
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -367,11 +319,11 @@ void CTab_PC::OnCbnSelchangeDiffMethodPc()
 
 bool CTab_PC::CheckConfig()
 {
-	bool bChanged		= false;
-	double scaleX		= m_scaleX;
-	double scaleY		= m_scaleY;
-	double scaleZ		= m_scaleZ;
-	double distance		= m_distance;
+	bool bChanged = false;
+	double scaleX = m_scaleX;
+	double scaleY = m_scaleY;
+	double scaleZ = m_scaleZ;
+	double distance = m_distance;
 	UpdateData(TRUE);
 
 	if (scaleX != m_scaleX || scaleY != m_scaleY || scaleZ != m_scaleZ) {
@@ -388,70 +340,130 @@ bool CTab_PC::CheckConfig()
 	return bChanged;
 }
 
-LRESULT CTab_PC::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_PC::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		bool bChangedConfig = CheckConfig();
+	bool bChangedConfig = CheckConfig();
 
-		UpdateData(TRUE);
+	UpdateData(TRUE);
 
-		if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
-			AfxMessageBox(L"Config value error - scale");
-			return FALSE;
-		}
-		if (m_distance == 0.0) {
-			AfxMessageBox(L"Config value error - offset depth");
-			return FALSE;
-		}
-		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-		auto context = m_pPointCloud->getContext();
-		m_pPointCloud->setDistance(m_distance);
-		m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
-		m_pPointCloud->setMode(!dlg->UseGPGPU());
-		m_pPointCloud->setViewingWindow(dlg->UseVW());
-
-		dlg->ForegroundConsole();
-
-		Dialog_Progress progress;
-
-		BOOL bIsFinish = FALSE;
-
-		parammeter *pParam = new parammeter;
-		pParam->flag = m_idxDiff;
-		pParam->pGEN = m_pPointCloud;
-		pParam->pDialog = &progress;
-		progress.m_bPercent = true;
-		progress.m_iPercent = m_pPointCloud->getPercent();
-
-		CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();	
+	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
+		AfxMessageBox(L"Config value error - scale");
+		return FALSE;
 	}
-	else if (wParam == ENCODE) {
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pPointCloud)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pPointCloud->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pPointCloud->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
-		m_pPointCloud->normalize();
+	if (m_distance == 0.0) {
+		AfxMessageBox(L"Config value error - offset depth");
+		return FALSE;
 	}
-	else if (wParam == SAVE_IMG) {
-		return SaveIMG();
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	auto context = m_pPointCloud->getContext();
+	m_pPointCloud->setDistance(m_distance);
+	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
+	m_pPointCloud->setMode(!dlg->UseGPGPU());
+	m_pPointCloud->setViewingWindow(dlg->UseVW());
+	m_pPointCloud->setPixelNumber(dlg->m_pixelnumX, dlg->m_pixelnumY);
+	m_pPointCloud->setPixelPitch(dlg->m_pixelpitchX, dlg->m_pixelpitchY);
+	for (int i = 0; i < context.waveNum; i++)
+		m_pPointCloud->setWaveLength(dlg->m_wavelength[i], i);
+
+	dlg->ForegroundConsole();
+
+	Dialog_Progress progress;
+
+	BOOL bIsFinish = FALSE;
+
+	parammeter *pParam = new parammeter;
+	pParam->flag = m_idxDiff;
+	pParam->pInst = m_pPointCloud;
+	pParam->pDialog = &progress;
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pPointCloud->getProgress();
+
+	CWinThread* pThread = AfxBeginThread(CallFunc, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+}
+
+
+LRESULT CTab_PC::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pPointCloud->Shift(shiftX, shiftY);
+
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pPointCloud)->encoding(ophGen::ENCODE_FLAG(idx));
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pPointCloud->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		break;
 	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+	m_pPointCloud->normalize();
+
+	Complex<Real> **pp = m_pPointCloud->getComplexField();
+	Real **pp1 = m_pPointCloud->getEncodedBuffer();
+	uchar **pp2 = m_pPointCloud->getNormalizedBuffer();
+	printf("Complex Buffer ======> %e , %e\n", pp[0][0][_RE], pp[0][0][_IM]);
+	printf("Encoded Buufer ======> %e\n", pp1[0][0]);
+	printf("Normalized Buffer ===> %d\n", pp2[0][0]);
+
+
+	return TRUE;
+
+}
+
+LRESULT CTab_PC::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveImage(path);
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return FALSE;
+
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+	auto size = m_pPointCloud->getEncodeSize();
+	int ch = m_pPointCloud->getContext().waveNum;
+	auto context = m_pPointCloud->getContext();
+
+	m_pPointCloud->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
+
+	pParent->OpenExplorer(path);
+
+	return TRUE;
+}
+
+LRESULT CTab_PC::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pPointCloud->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 	return TRUE;
 }

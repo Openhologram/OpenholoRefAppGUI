@@ -32,13 +32,16 @@ public:
 	UINT	*m_iPercent;
 	UINT	m_iProgress;
 	bool	m_bPercent;
+	bool	m_bGen;
 	CFont m_font;
+	CFont m_font2;
 
 	virtual BOOL DestroyWindow();
+	CProgressCtrl m_progress;
 };
 
 struct parammeter {
-	void* pGEN;
+	void* pInst;
 	UINT flag;
 	Dialog_Progress* pDialog;
 };

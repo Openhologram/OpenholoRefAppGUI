@@ -39,14 +39,14 @@ private:
 
 public:
 	static MWNAM_Image* GetInstance() {
-		if (m_pInst == NULL)
+		if (m_pInst == nullptr)
 			m_pInst = new MWNAM_Image;
 		return m_pInst;
 	}
 	static void DestroyInstance() {
 		if (m_pInst) {
 			delete m_pInst;
-			m_pInst = NULL;
+			m_pInst = nullptr;
 		}
 	}
 private:

@@ -30,9 +30,10 @@ public:
 	afx_msg void OnBnClickedLoadRGBImg();
 	afx_msg void OnBnClickedLoadDepthImg();
 	afx_msg void OnBnClickedViewIfta();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
-	void SaveIMG();
-	void SaveOHC();
+	afx_msg LRESULT OnGenerate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	bool CheckConfig();

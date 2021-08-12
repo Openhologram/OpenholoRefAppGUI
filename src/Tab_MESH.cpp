@@ -61,10 +61,10 @@ BEGIN_MESSAGE_MAP(CTab_MESH, CDialogEx)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_VIEW_MESH, &CTab_MESH::OnBnClickedViewMesh)
-	ON_MESSAGE(GENERATE, &CTab_MESH::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_MESH::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_MESH::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_MESH::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_MESH::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_MESH::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_MESH::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_MESH::OnSaveOHC)
 END_MESSAGE_MAP()
 
 
@@ -146,7 +146,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	if (!path.GetLength()) return;
 	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
 
-	
+
 	if (!m_pMesh->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for Triangle Mesh.");
 		return;
@@ -247,11 +247,14 @@ void CTab_MESH::OnBnClickedViewMesh()
 
 UINT CallFuncMESH(void* param)
 {
-	parammeter *pParam = (parammeter *)param;	
-	((ophTri*)pParam->pGEN)->generateHologram(((ophTri*)pParam->pGEN)->SHADING_FLAT);
+	parammeter *pParam = (parammeter *)param;
+
+
+
+	((ophTri*)pParam->pInst)->generateHologram(pParam->flag);
 	pParam->pDialog->m_bFinished = TRUE;
 
-	ophTri *pMesh = ((ophTri *)pParam->pGEN);
+	ophTri *pMesh = ((ophTri *)pParam->pInst);
 	Complex<Real> **pp = pMesh->getComplexField();
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
@@ -261,28 +264,6 @@ UINT CallFuncMESH(void* param)
 	delete pParam;
 
 	return 1;
-}
-
-void CTab_MESH::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-	CString path;
-	pParent->SaveImage(path);
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-
-	ivec2 encode_size = m_pMesh->getEncodeSize();
-	int ch = m_pMesh->getContext().waveNum;
-	m_pMesh->save(CW2A(path), 8 * ch, nullptr, encode_size[_X], encode_size[_Y]);
-	
-	pParent->OpenExplorer(path);
 }
 
 void CTab_MESH::OnBnClickedViewMeshBmp()
@@ -296,32 +277,15 @@ void CTab_MESH::OnBnClickedViewMeshBmp()
 	viewer.DestroyWindow();
 }
 
-void CTab_MESH::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pMesh->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
-}
 
 BOOL CTab_MESH::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	// TODO:  Add extra initialization here
-	
+
+	((CButton*)GetDlgItem(IDC_RADIO_FLAT))->SetCheck(TRUE);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -346,53 +310,102 @@ void CTab_MESH::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"f%d_", m_pMesh->getNumMesh());
 }
 
-LRESULT CTab_MESH::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_MESH::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		UpdateData(TRUE);
-		auto context = m_pMesh->getContext();
+	UpdateData(TRUE);
+	auto context = m_pMesh->getContext();
 
-		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-		m_pMesh->setMode(!dlg->UseGPGPU());
-		dlg->ForegroundConsole();
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	m_pMesh->setMode(!dlg->UseGPGPU());
+	//m_pMesh->setPrecision(true);
+	dlg->ForegroundConsole();
 
-		Dialog_Progress progress;
+	Dialog_Progress progress;
 
-		BOOL bIsFinish = FALSE;
+	BOOL bIsFinish = FALSE;
 
-		parammeter *pParam = new parammeter;
-		pParam->pGEN = m_pMesh;
-		pParam->pDialog = &progress;
+	parammeter *pParam = new parammeter;
+	pParam->pInst = m_pMesh;
+	pParam->flag = ((CButton*)GetDlgItem(IDC_RADIO_FLAT))->GetCheck() ? m_pMesh->SHADING_FLAT : m_pMesh->SHADING_CONTINUOUS;
+	pParam->pDialog = &progress;
+	progress.m_bPercent = true;
+	progress.m_iPercent = m_pMesh->getProgress();
 
-		CWinThread* pThread = AfxBeginThread(CallFuncMESH, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();
+	CWinThread* pThread = AfxBeginThread(CallFuncMESH, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+
+	return TRUE;
+}
+
+LRESULT CTab_MESH::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pMesh->Shift(shiftX, shiftY);
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pMesh)->encoding(ophGen::ENCODE_FLAG(idx));
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pMesh->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		break;
 	}
-	else if (wParam == ENCODE) {
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pMesh)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pMesh->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pMesh->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
-		m_pMesh->normalize();
-	}
-	else if (wParam == SAVE_IMG) {
-		SaveIMG();
-	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+	m_pMesh->normalize();
+	return TRUE;
+}
+
+LRESULT CTab_MESH::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+	CString path;
+	pParent->SaveImage(path);
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+
+	ivec2 encode_size = m_pMesh->getEncodeSize();
+	int ch = m_pMesh->getContext().waveNum;
+	m_pMesh->save(CW2A(path), 8 * ch, nullptr, encode_size[_X], encode_size[_Y]);
+
+	pParent->OpenExplorer(path);
+	return TRUE;
+}
+
+LRESULT CTab_MESH::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pMesh->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
+
 	return TRUE;
 }

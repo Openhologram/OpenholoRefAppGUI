@@ -58,10 +58,10 @@ BEGIN_MESSAGE_MAP(CTab_IFTA, CDialogEx)
 	ON_BN_CLICKED(IDC_LOAD_D_IMG_IFTA, &CTab_IFTA::OnBnClickedLoadDepthImg)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
-	ON_MESSAGE(GENERATE, &CTab_IFTA::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_IFTA::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_IFTA::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_IFTA::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_IFTA::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_IFTA::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_IFTA::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_IFTA::OnSaveOHC)
 END_MESSAGE_MAP()
 
 
@@ -146,7 +146,7 @@ void CTab_IFTA::OnBnClickedReadConfig_Ifta()
 	if (!path.GetLength()) return;
 	AfxGetApp()->WriteProfileString(KEY_NAME, L"Config Path", path.Left(path.ReverseFind('\\') + 1));
 
-	
+
 	if (!m_pIFTA->readConfig(CW2A(path))) {
 		AfxMessageBox(L"it is not xml config file for IFTA.");
 		return;
@@ -247,21 +247,21 @@ void CTab_IFTA::OnBnClickedLoadRGBImg()
 
 	if (m_bRGBimg && m_bDimg)
 		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
-	
+
 }
 
 UINT CallFuncIFTA(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	
+
 #if 0
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
 
-	ophIFTA *pIFTA = ((ophIFTA *)pParam->pGEN);
+	ophIFTA *pIFTA = ((ophIFTA *)pParam->pInst);
 	Complex<Real> **pp = pIFTA->getComplexField();
 
 	for (int i = 0; i < 10; i++) {
-		((ophIFTA*)pParam->pGEN)->generateHologram();
+		((ophIFTA*)pParam->pInst)->generateHologram();
 		for (uint i = 0; i < pIFTA->getContext().waveNum; i++) {
 			printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
 		}
@@ -269,10 +269,10 @@ UINT CallFuncIFTA(void* param)
 
 	pParam->pDialog->m_bFinished = TRUE;
 #else
-	((ophIFTA*)pParam->pGEN)->generateHologram();
+	((ophIFTA*)pParam->pInst)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	ophIFTA *pIFTA = ((ophIFTA *)pParam->pGEN);
+	ophIFTA *pIFTA = ((ophIFTA *)pParam->pInst);
 	Complex<Real> **pp = pIFTA->getComplexField();
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
@@ -296,50 +296,6 @@ void CTab_IFTA::MakeFileName(CString szAppend)
 	m_szFileName = ((COpenholoRefAppDlg *)AfxGetMainWnd())->GetFileName();
 	m_szFileName.AppendFormat(L"%dch_", m_pIFTA->getContext().waveNum);
 	m_szFileName.AppendFormat(L"%dx%d_", m_pIFTA->getContext().pixel_number[_X], m_pIFTA->getContext().pixel_number[_Y]);
-}
-
-void CTab_IFTA::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveImage(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	int ch = m_pIFTA->getContext().waveNum;
-	auto size = m_pIFTA->getEncodeSize();
-	m_pIFTA->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
-	
-	pParent->OpenExplorer(path);
-}
-
-
-void CTab_IFTA::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pIFTA->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
 }
 
 void fft(vector<Complex<Real>> &src, vector<Complex<Real>> &dst)
@@ -369,12 +325,13 @@ void fft(vector<Complex<Real>> &src, vector<Complex<Real>> &dst)
 void ifft(vector<Complex<Real>> &src, vector<Complex<Real>> &dst)
 {
 	fft(src, dst);
-
+	/*
 	int n = dst.size();
 	for (int i = 0; i < n; i++) {
 		dst[i][_RE] /= n;
 		dst[i][_IM] /= -n;
 	}
+	*/
 }
 
 
@@ -386,19 +343,16 @@ BOOL CTab_IFTA::OnInitDialog()
 
 	// GeForce GPU 일 때만, 활성화
 	COpenholoRefAppDlg *pDlg = (COpenholoRefAppDlg *)AfxGetApp()->GetMainWnd();
-	/*
+
 	vector<Complex<Real>> vc;
-	vector<Complex<Real>> vc2;
+	vector<Complex<Real>> vc2(3);
 	vc.push_back(Complex<Real>(1, 0));
 	vc.push_back(Complex<Real>(2, 0));
 	vc.push_back(Complex<Real>(3, 0));
-	vc.push_back(Complex<Real>(4, 0));
-	vc2.push_back(Complex<Real>(1, 0));
-	vc2.push_back(Complex<Real>(2, 0));
-	vc2.push_back(Complex<Real>(3, 0));
-	vc2.push_back(Complex<Real>(4, 0));
+	//vc.push_back(Complex<Real>(0, 0));
+	//vc.push_back(Complex<Real>(5, 0));
 	ifft(vc, vc2);
-	*/
+
 
 
 
@@ -460,55 +414,95 @@ void CTab_IFTA::InitUI()
 }
 
 
-LRESULT CTab_IFTA::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_IFTA::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		UpdateData(TRUE);
+	UpdateData(TRUE);
 
-		((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
+	((COpenholoRefAppDlg *)AfxGetMainWnd())->ForegroundConsole();
 
-		Dialog_Progress progress;
+	Dialog_Progress progress;
 
-		BOOL bIsFinish = FALSE;
+	BOOL bIsFinish = FALSE;
 
-		parammeter *pParam = new parammeter;
-		pParam->pGEN = m_pIFTA;
-		pParam->pDialog = &progress;
+	parammeter *pParam = new parammeter;
+	pParam->pInst = m_pIFTA;
+	pParam->pDialog = &progress;
 
-		CWinThread* pThread = AfxBeginThread(CallFuncIFTA, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();
+	CWinThread* pThread = AfxBeginThread(CallFuncIFTA, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+	return TRUE;
+}
+
+LRESULT CTab_IFTA::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pIFTA->Shift(shiftX, shiftY);
+
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pIFTA)->encoding(ophGen::ENCODE_FLAG(idx));
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pIFTA->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		break;
 	}
-	else if (wParam == ENCODE) {
-		COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
-		Real shiftX = pParent->GetShiftX();
-		Real shiftY = pParent->GetShiftY();
-		m_pIFTA->Shift(shiftX, shiftY);
-		
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pIFTA)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pIFTA->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pIFTA->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
-		m_pIFTA->normalize();
-	}
-	else if (wParam == SAVE_IMG) {
-		SaveIMG();
-	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+	m_pIFTA->normalize();
+	return TRUE;
+}
+
+LRESULT CTab_IFTA::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveImage(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	int ch = m_pIFTA->getContext().waveNum;
+	auto size = m_pIFTA->getEncodeSize();
+	m_pIFTA->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
+
+	pParent->OpenExplorer(path);
+	return TRUE;
+}
+
+LRESULT CTab_IFTA::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pIFTA->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 	return TRUE;
 }

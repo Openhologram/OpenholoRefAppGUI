@@ -60,10 +60,10 @@ BEGIN_MESSAGE_MAP(CTab_WRP, CDialogEx)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_VIEW_WRP, &CTab_WRP::OnBnClickedViewWrp)
-	ON_MESSAGE(GENERATE, &CTab_WRP::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_WRP::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_WRP::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_WRP::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_WRP::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_WRP::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_WRP::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_WRP::OnSaveOHC)
 END_MESSAGE_MAP()
 
 
@@ -174,7 +174,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 	m_distance = m_pWRP->getDistance();
 	m_numofWRP = m_pWRP->getNumOfWRP();
 	m_locationWRP = m_pWRP->getLocation();
-	
+
 	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	pParent->SetWaveNum(context.waveNum);
 	pParent->SetWaveLength(context.wave_length);
@@ -218,7 +218,7 @@ void CTab_WRP::OnBnClickedLoadPcWrp()
 	}
 
 	m_bPC = true;
-	if (m_bConfig) 
+	if (m_bConfig)
 		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 
 	GetDlgItem(IDC_VIEW_WRP)->EnableWindow(TRUE);
@@ -260,10 +260,10 @@ void CTab_WRP::OnBnClickedViewWrp()
 UINT CallFuncWRP(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	((ophWRP*)pParam->pGEN)->generateHologram();
+	((ophWRP*)pParam->pInst)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	ophWRP *pWRP = ((ophWRP *)pParam->pGEN);
+	ophWRP *pWRP = ((ophWRP *)pParam->pInst);
 	Complex<Real> **pp = pWRP->getComplexField();
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
@@ -287,29 +287,6 @@ void CTab_WRP::MakeFileName(CString szAppend)
 	m_szFileName.AppendFormat(L"v%d_", m_pWRP->getNumOfPoints());
 }
 
-
-void CTab_WRP::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveImage(path);
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	int ch = m_pWRP->getContext().waveNum;
-	auto size = m_pWRP->getEncodeSize();
-	m_pWRP->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
-	
-	pParent->OpenExplorer(path);
-}
-
 void CTab_WRP::OnBnClickedViewWrpBmp()
 {
 	// TODO: Add your control notification handler code here
@@ -320,28 +297,6 @@ void CTab_WRP::OnBnClickedViewWrpBmp()
 
 	viewer.DestroyWindow();
 }
-
-
-void CTab_WRP::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pWRP->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
-}
-
 
 BOOL CTab_WRP::OnInitDialog()
 {
@@ -365,68 +320,113 @@ void CTab_WRP::OnDestroy()
 }
 
 
-LRESULT CTab_WRP::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_WRP::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		UpdateData(TRUE);
+	UpdateData(TRUE);
 
-		if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
-			AfxMessageBox(L"Config value error - scale");
-			return FALSE;
-		}
-		if (m_distance == 0.0) {
-			AfxMessageBox(L"Config value error - offset depth");
-			return FALSE;
-		}
-
-		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-
-		auto context = m_pWRP->getContext();
-		m_pWRP->setDistance(m_distance);
-		m_pWRP->setMode(!dlg->UseGPGPU());
-		m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
-		m_pWRP->setLocation(m_locationWRP);
-		m_pWRP->setViewingWindow(dlg->UseVW());
-		
-		dlg->ForegroundConsole();
-
-		Dialog_Progress progress;
-
-		BOOL bIsFinish = FALSE;
-
-		parammeter *pParam = new parammeter;
-		pParam->pGEN = m_pWRP;
-		pParam->pDialog = &progress;
-
-		CWinThread* pThread = AfxBeginThread(CallFuncWRP, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();
+	if (m_scaleX == 0.0 || m_scaleY == 0.0 || m_scaleZ == 0.0) {
+		AfxMessageBox(L"Config value error - scale");
+		return FALSE;
 	}
-	else if (wParam == ENCODE) {
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pWRP)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pWRP->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pWRP->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
-		m_pWRP->normalize();
+	if (m_distance == 0.0) {
+		AfxMessageBox(L"Config value error - offset depth");
+		return FALSE;
 	}
-	else if (wParam == SAVE_IMG) {
-		SaveIMG();
+
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+
+	auto context = m_pWRP->getContext();
+	m_pWRP->setDistance(m_distance);
+	m_pWRP->setMode(!dlg->UseGPGPU());
+	m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
+	m_pWRP->setLocation(m_locationWRP);
+	m_pWRP->setViewingWindow(dlg->UseVW());
+
+	dlg->ForegroundConsole();
+
+	Dialog_Progress progress;
+
+	BOOL bIsFinish = FALSE;
+
+	parammeter *pParam = new parammeter;
+	pParam->pInst = m_pWRP;
+	pParam->pDialog = &progress;
+	//progress.m_bPercent = true;
+	//progress.m_iPercent = m_pWRP->getProgress();
+
+	CWinThread* pThread = AfxBeginThread(CallFuncWRP, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+	return TRUE;
+}
+
+LRESULT CTab_WRP::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pWRP->Shift(shiftX, shiftY);
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pWRP)->encoding(ophGen::ENCODE_FLAG(idx));
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pWRP->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		break;
 	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+	m_pWRP->normalize();
+	return TRUE;
+}
+
+LRESULT CTab_WRP::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveImage(path);
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	int ch = m_pWRP->getContext().waveNum;
+	auto size = m_pWRP->getEncodeSize();
+	m_pWRP->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
+
+	pParent->OpenExplorer(path);
+	return TRUE;
+}
+
+LRESULT CTab_WRP::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pWRP->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 	return TRUE;
 }

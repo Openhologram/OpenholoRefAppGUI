@@ -39,3 +39,7 @@ src/x64/Release/OpenholoRefAppGUI.res
 x64/Release/OpenholoRefAppGUI.iobj
 src/x64/Debug/RCa04604
 x64/Release/OpenholoRefAppGUI.ipdb
+.metadata/.lock
+*.snap
+*.index
+.metadata/.plugins/org.eclipse.core.resources/.root/.indexes/properties.version

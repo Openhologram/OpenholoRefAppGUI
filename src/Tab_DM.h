@@ -35,7 +35,10 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangePropagationMethodDm();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnGenerate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif
@@ -43,8 +46,6 @@ public:
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
 	bool CheckConfig();
-	void SaveOHC();
-	void SaveIMG();
 	ophDepthMap* GetInstance() { return m_pDepthMap; }
 	
 	void Generate();

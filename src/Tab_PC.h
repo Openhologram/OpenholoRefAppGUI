@@ -33,7 +33,10 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
 	afx_msg void OnCbnSelchangeDiffMethodPc();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnGenerate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
 	bool CheckConfig();
 
 #ifdef TEST_MODE
@@ -42,8 +45,6 @@ public:
 	void GetEncodeName(CString &szEncode);
 	void MakeFileName(CString szAppend = L"");
 	ophPointCloud* GetInstance() { return m_pPointCloud; }
-	BOOL SaveIMG();
-	void SaveOHC();
 	CString m_szFileName;
 	CString m_szEncodeName;
 	ophPointCloud *m_pPointCloud;

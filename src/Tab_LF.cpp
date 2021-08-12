@@ -54,10 +54,10 @@ BEGIN_MESSAGE_MAP(CTab_LF, CDialogEx)
 	ON_WM_CREATE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_VIEW_LF, &CTab_LF::OnBnClickedViewLf)
-	ON_MESSAGE(GENERATE, &CTab_LF::OnMsg)
-	ON_MESSAGE(ENCODE, &CTab_LF::OnMsg)
-	ON_MESSAGE(SAVE_IMG, &CTab_LF::OnMsg)
-	ON_MESSAGE(SAVE_OHC, &CTab_LF::OnMsg)
+	ON_MESSAGE(GENERATE, &CTab_LF::OnGenerate)
+	ON_MESSAGE(ENCODE, &CTab_LF::OnEncode)
+	ON_MESSAGE(SAVE_IMG, &CTab_LF::OnSaveIMG)
+	ON_MESSAGE(SAVE_OHC, &CTab_LF::OnSaveOHC)
 END_MESSAGE_MAP()
 
 
@@ -226,10 +226,10 @@ void CTab_LF::OnBnClickedViewLf()
 UINT CallFuncLF(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
-	((ophLF*)pParam->pGEN)->generateHologram();
+	((ophLF*)pParam->pInst)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
-	ophLF *pLF = ((ophLF *)pParam->pGEN);
+	ophLF *pLF = ((ophLF *)pParam->pInst);
 	Complex<Real> **pp = pLF->getComplexField();
 
 	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
@@ -241,29 +241,6 @@ UINT CallFuncLF(void* param)
 	return 1;
 }
 
-
-void CTab_LF::SaveIMG()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveImage(path);
-
-	SetCurrentDirectory(szCurPath);
-	if (!path.GetLength()) return;
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	ivec2 encodeSize = m_pLightField->getEncodeSize();
-	int ch = m_pLightField->getContext().waveNum;
-	m_pLightField->save(CW2A(path), 8 *ch, nullptr, encodeSize[_X], encodeSize[_Y]);
-	
-	pParent->OpenExplorer(path);
-}
-
 void CTab_LF::OnBnClickedViewLfBmp()
 {
 	// TODO: Add your control notification handler code here
@@ -273,27 +250,6 @@ void CTab_LF::OnBnClickedViewLfBmp()
 	viewer.DoModal();
 
 	viewer.DestroyWindow();
-}
-
- 
-void CTab_LF::SaveOHC()
-{
-	// TODO: Add your control notification handler code here
-	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
-
-	TCHAR szCurPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szCurPath);
-
-	CString path;
-	pParent->SaveOHC(path);
-
-	SetCurrentDirectory(szCurPath);
-
-	_tcscpy_s(m_resultPath, path.GetBuffer());
-
-	if (!path.GetLength()) return;
-	m_pLightField->saveAsOhc(CW2A(path));
-	pParent->OpenExplorer(path);
 }
 
 
@@ -332,65 +288,108 @@ void CTab_LF::MakeFileName(CString szAppend)
 }
 
 
-LRESULT CTab_LF::OnMsg(WPARAM wParam, LPARAM lParam)
+LRESULT CTab_LF::OnGenerate(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == GENERATE) {
-		UpdateData(TRUE);
-		if (m_distance == 0.0) {
-			AfxMessageBox(L"Config value error - distance RS to Hologram");
-			return FALSE;
-		}
-		if (m_numimgX == 0 || m_numimgY == 0) {
-			AfxMessageBox(L"Config value error - number of images of LF");
-			return FALSE;
-		}
-		m_pLightField->setDistRS2Holo(m_distance);
-		m_pLightField->setNumImage(m_numimgX, m_numimgY);
-
-		COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-
-		m_pLightField->setMode(!dlg->UseGPGPU());
-		m_pLightField->setViewingWindow(dlg->UseVW());
-
-		dlg->ForegroundConsole();
-
-		Dialog_Progress progress;
-
-		BOOL bIsFinish = FALSE;
-
-		parammeter *pParam = new parammeter;
-		pParam->pGEN = m_pLightField;
-		pParam->pDialog = &progress;
-
-		CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
-		progress.DoModal();
-		progress.DestroyWindow();
+	UpdateData(TRUE);
+	if (m_distance == 0.0) {
+		AfxMessageBox(L"Config value error - distance RS to Hologram");
+		return FALSE;
 	}
-	else if (wParam == ENCODE) {
-		int idx = lParam;
-		switch (ophGen::ENCODE_FLAG(idx)) {
-		case ophGen::ENCODE_PHASE:
-		case ophGen::ENCODE_AMPLITUDE:
-		case ophGen::ENCODE_REAL:
-		case ophGen::ENCODE_SIMPLENI:
-		case ophGen::ENCODE_BURCKHARDT:
-		case ophGen::ENCODE_TWOPHASE:
-			((ophGen*)m_pLightField)->encoding(ophGen::ENCODE_FLAG(idx));
-			break;
-		case ophGen::ENCODE_SSB:
-		case ophGen::ENCODE_OFFSSB:
-			m_pLightField->encoding(ophGen::ENCODE_FLAG(idx), ophGen::SSB_TOP);
-			break;
-		case ophGen::ENCODE_SYMMETRIZATION:
-			m_pLightField->ophGen::encoding(ophGen::ENCODE_FLAG(idx));
-		}
-		m_pLightField->normalize();
+	if (m_numimgX == 0 || m_numimgY == 0) {
+		AfxMessageBox(L"Config value error - number of images of LF");
+		return FALSE;
 	}
-	else if (wParam == SAVE_IMG) {
-		SaveIMG();
+	m_pLightField->setDistRS2Holo(m_distance);
+	m_pLightField->setNumImage(m_numimgX, m_numimgY);
+
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+
+	m_pLightField->setMode(!dlg->UseGPGPU());
+	m_pLightField->setViewingWindow(dlg->UseVW());
+
+	dlg->ForegroundConsole();
+
+	Dialog_Progress progress;
+
+	BOOL bIsFinish = FALSE;
+
+	parammeter *pParam = new parammeter;
+	pParam->pInst = m_pLightField;
+	pParam->pDialog = &progress;
+
+	CWinThread* pThread = AfxBeginThread(CallFuncLF, pParam);
+	progress.m_bGen = true;
+	progress.DoModal();
+	progress.DestroyWindow();
+	return TRUE;
+}
+
+
+LRESULT CTab_LF::OnEncode(WPARAM wParam, LPARAM lParam)
+{
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	Real shiftX = pParent->GetShiftX();
+	Real shiftY = pParent->GetShiftY();
+	m_pLightField->Shift(shiftX, shiftY);
+	int idx = wParam;
+	switch (ophGen::ENCODE_FLAG(idx)) {
+	case ophGen::ENCODE_PHASE:
+	case ophGen::ENCODE_AMPLITUDE:
+	case ophGen::ENCODE_REAL:
+	case ophGen::ENCODE_IMAGINEARY:
+	case ophGen::ENCODE_SIMPLENI:
+	case ophGen::ENCODE_BURCKHARDT:
+	case ophGen::ENCODE_TWOPHASE:
+		((ophGen*)m_pLightField)->encoding(ophGen::ENCODE_FLAG(idx));
+		break;
+	case ophGen::ENCODE_SSB:
+	case ophGen::ENCODE_OFFSSB:
+		m_pLightField->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
+		break;
 	}
-	else if (wParam == SAVE_OHC) {
-		SaveOHC();
-	}
+	m_pLightField->normalize();
+	return TRUE;
+}
+LRESULT CTab_LF::OnSaveIMG(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveImage(path);
+
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return FALSE;
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	ivec2 encodeSize = m_pLightField->getEncodeSize();
+	int ch = m_pLightField->getContext().waveNum;
+	m_pLightField->save(CW2A(path), 8 * ch, nullptr, encodeSize[_X], encodeSize[_Y]);
+
+	pParent->OpenExplorer(path);
+	return TRUE;
+}
+
+LRESULT CTab_LF::OnSaveOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *pParent = ((COpenholoRefAppDlg *)AfxGetMainWnd());
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	CString path;
+	pParent->SaveOHC(path);
+
+	SetCurrentDirectory(szCurPath);
+
+	_tcscpy_s(m_resultPath, path.GetBuffer());
+
+	if (!path.GetLength()) return FALSE;
+	m_pLightField->saveAsOhc(CW2A(path));
+	pParent->OpenExplorer(path);
 	return TRUE;
 }

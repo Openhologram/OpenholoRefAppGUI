@@ -37,6 +37,10 @@
 #include <afxcontrolbars.h>
 #include <afxcontrolbars.h>
 #include <afxcontrolbars.h>
+#include <afxcontrolbars.h>
+#include <afxcontrolbars.h>
+#include <afxcontrolbars.h>
+#include <afxcontrolbars.h>
 
 #ifdef _UNICODE
 #pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")

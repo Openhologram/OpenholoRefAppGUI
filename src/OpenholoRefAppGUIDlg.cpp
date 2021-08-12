@@ -19,6 +19,7 @@
 #include "Tab_MESH.h"
 #include "Tab_WRP.h"
 #include "Tab_IFTA.h"
+#include "Tab_RECON.h"
 #include "Dialog_BMP_Viewer.h"
 #include "Dialog_Progress.h"
 #include "Dialog_Prompt.h"
@@ -94,6 +95,7 @@ COpenholoRefAppDlg::COpenholoRefAppDlg(CWnd* pParent /*=NULL*/)
 	, m_pixelnumX(0)
 	, m_pixelnumY(0)
 	, m_iEncode(0)
+	, m_iPassband(2)
 	, m_nWave(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -105,12 +107,15 @@ void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_GEN_TAB, m_Tab);
+	DDX_Control(pDX, IDC_COMBO_ALGORITHM, m_Algo);
+	DDX_Control(pDX, IDC_COMBO_ALGORITHM_RECON, m_AlgoRecon);
 	DDX_Control(pDX, IDC_OPH_LOGO, m_picOphLogo);
 	DDX_Control(pDX, IDC_LOG_CHECK, m_buttonLog);
 	DDX_Control(pDX, IDC_EXPLORER_CHECK, m_buttonExplorer);
 	DDX_Control(pDX, IDC_KETI_LOGO, m_picKetiLogo);
 	DDX_Control(pDX, IDC_ALWAYS_CHECK, m_buttonAlways);
 	DDX_Control(pDX, IDC_GENERATE, m_buttonGenerate);
+	DDX_Control(pDX, IDC_RECONSTRUCT, m_buttonReconstruct);
 	DDX_Control(pDX, IDC_SAVE_IMG, m_buttonSaveBmp);
 	DDX_Control(pDX, IDC_SAVE_OHC, m_buttonSaveOhc);
 	DDX_Control(pDX, IDC_ENCODING, m_buttonEncode);
@@ -127,6 +132,7 @@ void COpenholoRefAppDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_WAVE_LENGTH2, m_wavelength[1]);
 	DDX_Text(pDX, IDC_WAVE_LENGTH3, m_wavelength[2]);
 	DDX_Control(pDX, IDC_ENCODE_METHOD, m_encodeMethod);
+	DDX_Control(pDX, IDC_ENCODE_PASSBAND, m_encodePassband);
 	DDX_Control(pDX, IDC_VIEW_IMG, m_buttonViewImg);
 }
 
@@ -149,10 +155,15 @@ BEGIN_MESSAGE_MAP(COpenholoRefAppDlg, CDialogEx)
 	ON_MESSAGE(LOAD_CFG, &COpenholoRefAppDlg::OnReceive)
 	ON_MESSAGE(LOAD_DATA, &COpenholoRefAppDlg::OnReceive)
 	ON_BN_CLICKED(IDC_GENERATE, &COpenholoRefAppDlg::OnBnClickedGenerate)
+	ON_BN_CLICKED(IDC_RECONSTRUCT, &COpenholoRefAppDlg::OnBnClickedReconstruct)
 	ON_BN_CLICKED(IDC_SAVE_IMG, &COpenholoRefAppDlg::OnBnClickedSaveImg)
 	ON_BN_CLICKED(IDC_ENCODING, &COpenholoRefAppDlg::OnBnClickedEncoding)
 	ON_BN_CLICKED(IDC_SAVE_OHC, &COpenholoRefAppDlg::OnBnClickedSaveOhc)
 	ON_CBN_SELCHANGE(IDC_ENCODE_METHOD, &COpenholoRefAppDlg::OnCbnSelchangeEncodeMethod)
+	ON_CBN_SELCHANGE(IDC_COMBO_ALGORITHM, &COpenholoRefAppDlg::OnCbnSelchangeComboAlgorithm)
+	ON_WM_CTLCOLOR()
+	ON_CBN_SELCHANGE(IDC_COMBO_ALGORITHM_RECON, &COpenholoRefAppDlg::OnCbnSelchangeComboAlgorithmRecon)
+	ON_CBN_SELCHANGE(IDC_ENCODE_PASSBAND, &COpenholoRefAppDlg::OnCbnSelchangeEncodePassband)
 END_MESSAGE_MAP()
 
 
@@ -204,7 +215,7 @@ BOOL COpenholoRefAppDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	CheckDlgButton(IDC_LOG_CHECK, TRUE);
 	CheckDlgButton(IDC_EXPLORER_CHECK, TRUE);
-
+	m_AlgoRecon.ShowWindow(SW_HIDE);
 	
 	m_imgOPH_LOGO.Load(_T("res/OpenHolo_logo.png"));
 	m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
@@ -230,13 +241,20 @@ void COpenholoRefAppDlg::initUI()
 	m_encodeMethod.AddString(L"Phase");
 	m_encodeMethod.AddString(L"Amplitude");
 	m_encodeMethod.AddString(L"Real");
+	m_encodeMethod.AddString(L"Imaginary");
 	m_encodeMethod.AddString(L"Simple NI");
 	m_encodeMethod.AddString(L"Burckhardt");
 	m_encodeMethod.AddString(L"Two-Phase");
 	m_encodeMethod.AddString(L"SSB");
 	m_encodeMethod.AddString(L"Off-SSB");
-	m_encodeMethod.AddString(L"Symmetrization");
 	m_encodeMethod.SetCurSel(m_iEncode);
+
+	m_encodePassband.Clear();
+	m_encodePassband.AddString(L"LEFT");
+	m_encodePassband.AddString(L"RIGHT");
+	m_encodePassband.AddString(L"TOP");
+	m_encodePassband.AddString(L"BOTTOM");
+	m_encodePassband.SetCurSel(m_iPassband);
 }
 
 void COpenholoRefAppDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -288,7 +306,7 @@ void COpenholoRefAppDlg::OnPaint()
 		//m_imgOPH_LOGO.LoadFromResource(AfxGetApp()->m_hInstance, IDB_OPENHOLO_LOGO);
 		m_imgOPH_LOGO.Load(_T("res/OpenHolo_logo.png"));
 		m_imgOPH_LOGO.Draw(dc->m_hDC, 0, 0, m_imgOPH_LOGO.GetWidth(), m_imgOPH_LOGO.GetHeight());
-
+		ReleaseDC(dc);
 
 		pWnd = (CWnd*)GetDlgItem(IDC_KETI_LOGO);
 		dc = pWnd->GetDC();
@@ -297,6 +315,8 @@ void COpenholoRefAppDlg::OnPaint()
 		m_imgKETI_LOGO.Destroy();
 		m_imgKETI_LOGO.Load(_T("res/KETI_logo.png"));
 		m_imgKETI_LOGO.Draw(dc->m_hDC, 0, 0, m_imgKETI_LOGO.GetWidth(), m_imgKETI_LOGO.GetHeight());
+		ReleaseDC(dc);
+
 	}
 }
 
@@ -309,47 +329,61 @@ HCURSOR COpenholoRefAppDlg::OnQueryDragIcon()
 
 void COpenholoRefAppDlg::initTabs(void)
 {
-	m_Tab.InsertItem(0, _T("Point Cloud"));
-	m_Tab.InsertItem(1, _T("Depth Map"));
-	m_Tab.InsertItem(2, _T("Light Field"));
-	m_Tab.InsertItem(3, _T("Triangle Mesh"));
-	m_Tab.InsertItem(4, _T("WRP"));
-	m_Tab.InsertItem(5, _T("IFTA"));
-
+	m_Tab.InsertItem(0, L"Generation");
+	m_Tab.InsertItem(1, L"Reconstruction");
 	m_Tab.SetCurSel(0);
 
-	CRect rect;
-	m_Tab.GetWindowRect(&rect);
+	m_AlgoRecon.InsertString(0, L"Fringe");
+	m_AlgoRecon.InsertString(1, L"Phase & Amplitude");
+	m_AlgoRecon.InsertString(2, L"Real & Imaginary");
+
+	CRect rc;
+	m_Tab.GetWindowRect(&rc);
+
+	m_Algo.InsertString(0, L"Point Cloud");
+	m_Algo.InsertString(1, L"Depth Map");
+	m_Algo.InsertString(2, L"Light Field");
+	m_Algo.InsertString(3, L"Triangle Mesh");
+	m_Algo.InsertString(4, L"WRP");
+	m_Algo.InsertString(5, L"IFTA");
+
+	m_Algo.SetCurSel(0);	
+	m_AlgoRecon.SetCurSel(0);	
 
 	pTabPC = new CTab_PC;
 	pTabPC->Create(IDD_DLG_PC, &m_Tab);
-	pTabPC->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabPC->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabPC->ShowWindow(SW_SHOW);
 
 	pTabDM = new CTab_DM;
 	pTabDM->Create(IDD_DLG_DM, &m_Tab);
-	pTabDM->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabDM->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabDM->ShowWindow(SW_HIDE);
 
 	pTabLF = new CTab_LF;
 	pTabLF->Create(IDD_DLG_LF, &m_Tab);
-	pTabLF->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabLF->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabLF->ShowWindow(SW_HIDE);
 
 	pTabMESH = new CTab_MESH;
 	pTabMESH->Create(IDD_DLG_MESH, &m_Tab);
-	pTabMESH->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabMESH->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabMESH->ShowWindow(SW_HIDE);
 
 	pTabWRP = new CTab_WRP;
 	pTabWRP->Create(IDD_DLG_WRP, &m_Tab);
-	pTabWRP->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabWRP->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabWRP->ShowWindow(SW_HIDE);
 
 	pTabIFTA = new CTab_IFTA;
 	pTabIFTA->Create(IDD_DLG_IFTA, &m_Tab);
-	pTabIFTA->MoveWindow(0, 25, rect.Width(), rect.Height());
+	pTabIFTA->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
 	pTabIFTA->ShowWindow(SW_HIDE);
+
+	pTabRECON = new CTab_RECON;
+	pTabRECON->Create(IDD_DLG_RECON, &m_Tab);
+	pTabRECON->MoveWindow(0, 55, rc.Width(), rc.Height() - 30);
+	pTabRECON->ShowWindow(SW_HIDE);
 
 	m_vector.clear();
 	m_vector.push_back(pTabPC);
@@ -358,6 +392,8 @@ void COpenholoRefAppDlg::initTabs(void)
 	m_vector.push_back(pTabMESH);
 	m_vector.push_back(pTabWRP);
 	m_vector.push_back(pTabIFTA);
+	m_vector.push_back(pTabRECON);
+
 }
 
 
@@ -365,60 +401,9 @@ void COpenholoRefAppDlg::initTabs(void)
 void COpenholoRefAppDlg::OnTcnSelchangeGenTab(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	// TODO: Add your control notification handler code here
-	int sel = m_Tab.GetCurSel();
 
-	switch (sel)
-	{
-	case 0:
-		pTabPC->ShowWindow(SW_SHOW);
-		pTabDM->ShowWindow(SW_HIDE);
-		pTabLF->ShowWindow(SW_HIDE);
-		pTabMESH->ShowWindow(SW_HIDE);
-		pTabWRP->ShowWindow(SW_HIDE);
-		pTabIFTA->ShowWindow(SW_HIDE);
-		break;
-	case 1:
-		pTabPC->ShowWindow(SW_HIDE);
-		pTabDM->ShowWindow(SW_SHOW);
-		pTabLF->ShowWindow(SW_HIDE);
-		pTabMESH->ShowWindow(SW_HIDE);
-		pTabWRP->ShowWindow(SW_HIDE);
-		pTabIFTA->ShowWindow(SW_HIDE);
-		break;
-	case 2:
-		pTabPC->ShowWindow(SW_HIDE);
-		pTabDM->ShowWindow(SW_HIDE);
-		pTabLF->ShowWindow(SW_SHOW);
-		pTabMESH->ShowWindow(SW_HIDE);
-		pTabWRP->ShowWindow(SW_HIDE);
-		pTabIFTA->ShowWindow(SW_HIDE);
-		break;
-	case 3:
-		pTabPC->ShowWindow(SW_HIDE);
-		pTabDM->ShowWindow(SW_HIDE);
-		pTabLF->ShowWindow(SW_HIDE);
-		pTabMESH->ShowWindow(SW_SHOW);
-		pTabWRP->ShowWindow(SW_HIDE);
-		pTabIFTA->ShowWindow(SW_HIDE);
-		break;
-	case 4:
-		pTabPC->ShowWindow(SW_HIDE);
-		pTabDM->ShowWindow(SW_HIDE);
-		pTabLF->ShowWindow(SW_HIDE);
-		pTabMESH->ShowWindow(SW_HIDE);
-		pTabWRP->ShowWindow(SW_SHOW);
-		pTabIFTA->ShowWindow(SW_HIDE);
-		break;
-	case 5:
-		pTabPC->ShowWindow(SW_HIDE);
-		pTabDM->ShowWindow(SW_HIDE);
-		pTabLF->ShowWindow(SW_HIDE);
-		pTabMESH->ShowWindow(SW_HIDE);
-		pTabWRP->ShowWindow(SW_HIDE);
-		pTabIFTA->ShowWindow(SW_SHOW);
-		break;
-	}
-
+	ReloadContents();
+	pTabRECON->ReloadContents(0);
 	*pResult = 0;
 }
 
@@ -479,19 +464,21 @@ void COpenholoRefAppDlg::ForegroundConsole()
 void COpenholoRefAppDlg::OnClose()
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+
 	pTabPC->DestroyWindow();
 	pTabDM->DestroyWindow();
 	pTabMESH->DestroyWindow();
 	pTabWRP->DestroyWindow();
 	pTabLF->DestroyWindow();
 	pTabIFTA->DestroyWindow();
+	pTabRECON->DestroyWindow();
 	delete pTabPC;
 	delete pTabDM;
 	delete pTabMESH;
 	delete pTabWRP;
 	delete pTabLF;
 	delete pTabIFTA;
-
+	delete pTabRECON;
 	if (m_option->GetSafeHwnd())
 		m_option->DestroyWindow();
 	if (m_option)
@@ -591,7 +578,9 @@ void COpenholoRefAppDlg::report(char *szMsg)
 CString COpenholoRefAppDlg::GetFileName()
 {
 	CString szFileName;
-
+#if true
+	szFileName = L"";
+#else
 	int sel = m_Tab.GetCurSel();
 	switch (sel)
 	{
@@ -614,6 +603,7 @@ CString COpenholoRefAppDlg::GetFileName()
 		szFileName.Format(L"IFTA_");
 		break;
 	}
+#endif
 	szFileName.AppendFormat(L"%dx%d_%dch_%s", 
 		m_pixelnumX, m_pixelnumY, m_nWave, m_buttonGPU.GetCheck() ? L"GPU" : L"CPU");
 
@@ -756,23 +746,56 @@ void COpenholoRefAppDlg::OnBnClickedGenerate()
 		AfxMessageBox(L"Config value error - wave length");
 		return;
 	}
-
-	int sel = m_Tab.GetCurSel();
-	m_vector[sel]->SendMessage(GENERATE, GENERATE, 0);
-
+	int sel = m_Algo.GetCurSel();
+	m_vector[sel]->SendMessage(GENERATE, 0, 0);
+	m_encodeMethod.EnableWindow(TRUE);
+	m_encodePassband.EnableWindow(m_iEncode > 6 ? TRUE : FALSE);
 	m_buttonEncode.EnableWindow(TRUE);
 	m_buttonSaveBmp.EnableWindow(FALSE);
 	m_buttonSaveOhc.EnableWindow(TRUE);
 	m_buttonViewImg.EnableWindow(FALSE);
 }
 
+void COpenholoRefAppDlg::OnBnClickedReconstruct()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	UpdateData(TRUE);
+
+	if (m_pixelpitchX == 0.0 || m_pixelpitchY == 0.0) {
+		AfxMessageBox(L"Config value error - pixel pitch");
+		return;
+	}
+	if (m_pixelnumX == 0 || m_pixelnumY == 0) {
+		AfxMessageBox(L"Config value error - pixel number");
+		return;
+	}
+	if (m_wavelength[0] == 0.0) {
+		AfxMessageBox(L"Config value error - wave length");
+		return;
+	}
+	int sel = m_vector.size() - 1;
+	m_vector[sel]->SendMessage(RECONSTRUCT, 0, 0);
+
+	//m_buttonEncode.EnableWindow(TRUE);
+	m_buttonSaveBmp.EnableWindow(TRUE);
+	//m_buttonSaveOhc.EnableWindow(TRUE);
+	//m_buttonViewImg.EnableWindow(FALSE);
+}
 
 
 void COpenholoRefAppDlg::OnBnClickedSaveImg()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	int sel = m_Tab.GetCurSel();
-	BOOL res = m_vector[sel]->SendMessage(SAVE_IMG, SAVE_IMG, 0);
+	int tab = m_Tab.GetCurSel();
+	if (tab == 0)
+	{
+		int sel = m_Algo.GetCurSel();
+		BOOL res = m_vector[sel]->SendMessage(SAVE_IMG, 0, 0);
+	}
+	else
+	{
+		BOOL res = m_vector[m_vector.size()-1]->SendMessage(SAVE_IMG, 0, 0);
+	}
 
 }
 
@@ -781,9 +804,9 @@ void COpenholoRefAppDlg::OnBnClickedEncoding()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	UpdateData(FALSE);
-	int sel = m_Tab.GetCurSel();
+	int sel = m_Algo.GetCurSel();
 
-	BOOL res = m_vector[sel]->SendMessage(ENCODE, ENCODE, m_iEncode);
+	BOOL res = m_vector[sel]->SendMessage(ENCODE, m_iEncode, m_iPassband);
 	
 	m_buttonViewImg.EnableWindow(TRUE);
 	m_buttonSaveBmp.EnableWindow(TRUE);
@@ -793,8 +816,8 @@ void COpenholoRefAppDlg::OnBnClickedEncoding()
 void COpenholoRefAppDlg::OnBnClickedSaveOhc()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	int sel = m_Tab.GetCurSel();
-	m_vector[sel]->SendMessage(SAVE_OHC, SAVE_OHC, 0);
+	int sel = m_Algo.GetCurSel();
+	m_vector[sel]->SendMessage(SAVE_OHC, 0, 0);
 }
 
 
@@ -802,25 +825,116 @@ void COpenholoRefAppDlg::OnCbnSelchangeEncodeMethod()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	m_iEncode = m_encodeMethod.GetCurSel();
+	m_encodePassband.EnableWindow(m_iEncode > 6 ? TRUE : FALSE);
+}
+
+
+void COpenholoRefAppDlg::OnCbnSelchangeEncodePassband()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_iPassband = m_encodePassband.GetCurSel();
 }
 
 
 LRESULT COpenholoRefAppDlg::OnReceive(WPARAM wParam, LPARAM lParam)
 {	
+	int sel = m_Tab.GetCurSel();
 	if (wParam == LOAD_CFG) {
-		m_buttonGenerate.EnableWindow(FALSE);
-		m_buttonEncode.EnableWindow(FALSE);
+		if (sel == 0)
+		{
+			m_encodeMethod.EnableWindow(FALSE);
+			m_encodePassband.EnableWindow(FALSE);
+			m_buttonGenerate.EnableWindow(FALSE);
+			m_buttonEncode.EnableWindow(FALSE);
+			m_buttonSaveOhc.EnableWindow(FALSE);
+			m_buttonViewImg.EnableWindow(FALSE);
+		}
+		else
+			m_buttonReconstruct.EnableWindow(FALSE);		
 		m_buttonSaveBmp.EnableWindow(FALSE);
-		m_buttonSaveOhc.EnableWindow(FALSE);
-		m_buttonViewImg.EnableWindow(FALSE);
+
 		UpdateData(FALSE);
 	}
 	else if (wParam == LOAD_DATA) {
-		m_buttonGenerate.EnableWindow(TRUE);
-		m_buttonEncode.EnableWindow(FALSE);
+		if (sel == 0)
+		{
+			m_encodeMethod.EnableWindow(FALSE);
+			m_encodePassband.EnableWindow(FALSE);
+			m_buttonGenerate.EnableWindow(TRUE);
+			m_buttonEncode.EnableWindow(FALSE);
+			m_buttonSaveOhc.EnableWindow(FALSE);
+			m_buttonViewImg.EnableWindow(FALSE);
+		}
+		else
+			m_buttonReconstruct.EnableWindow(TRUE);
 		m_buttonSaveBmp.EnableWindow(FALSE);
-		m_buttonSaveOhc.EnableWindow(FALSE);
-		m_buttonViewImg.EnableWindow(FALSE);
 	}
 	return TRUE;
+}
+
+void COpenholoRefAppDlg::OnCbnSelchangeComboAlgorithm()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	ReloadContents();
+}
+
+
+HBRUSH COpenholoRefAppDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	// TODO:  여기서 DC의 특성을 변경합니다.
+
+	// TODO:  기본값이 적당하지 않으면 다른 브러시를 반환합니다.
+	return hbr;
+}
+
+void COpenholoRefAppDlg::ReloadContents()
+{
+	int comboSel = m_Algo.GetCurSel();
+	int tabSel = m_Tab.GetCurSel();
+
+	m_Algo.ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	m_AlgoRecon.ShowWindow(tabSel == 1 ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_STATIC_SHIFT)->ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_STATIC_ENCODE)->ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_SHIFT_X)->ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_SHIFT_Y)->ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_SHIFT_Z)->ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	m_encodeMethod.ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	m_encodePassband.ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	m_buttonEncode.ShowWindow(tabSel == 0 ? SW_SHOW : SW_HIDE);
+	if (tabSel == 0)
+	{
+		pTabPC->ShowWindow(comboSel == 0 ? SW_SHOW : SW_HIDE);
+		pTabDM->ShowWindow(comboSel == 1 ? SW_SHOW : SW_HIDE);
+		pTabLF->ShowWindow(comboSel == 2 ? SW_SHOW : SW_HIDE);
+		pTabMESH->ShowWindow(comboSel == 3 ? SW_SHOW : SW_HIDE);
+		pTabWRP->ShowWindow(comboSel == 4 ? SW_SHOW : SW_HIDE);
+		pTabIFTA->ShowWindow(comboSel == 5 ? SW_SHOW : SW_HIDE);
+		pTabRECON->ShowWindow(SW_HIDE);
+		m_buttonGenerate.ShowWindow(SW_SHOW);
+		m_buttonReconstruct.ShowWindow(SW_HIDE);
+	}
+	else
+	{
+		pTabRECON->ShowWindow(SW_SHOW);
+		pTabPC->ShowWindow(SW_HIDE);
+		pTabDM->ShowWindow(SW_HIDE);
+		pTabLF->ShowWindow(SW_HIDE);
+		pTabMESH->ShowWindow(SW_HIDE);
+		pTabWRP->ShowWindow(SW_HIDE);
+		pTabIFTA->ShowWindow(SW_HIDE);
+		m_buttonGenerate.ShowWindow(SW_HIDE);
+		m_buttonReconstruct.ShowWindow(SW_SHOW);
+	}
+}
+
+
+void COpenholoRefAppDlg::OnCbnSelchangeComboAlgorithmRecon()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	int sel = m_AlgoRecon.GetCurSel();
+
+	pTabRECON->ReloadContents(sel);
 }

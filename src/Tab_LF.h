@@ -29,12 +29,13 @@ public:
 	afx_msg void OnBnClickedReadConfig_LF();
 	afx_msg void OnBnClickedFindDir();
 	afx_msg void OnBnClickedViewLf();
-	void SaveIMG();
 	afx_msg void OnBnClickedViewLfBmp();
-	void SaveOHC();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnDestroy();
-	afx_msg LRESULT OnMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnGenerate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
 #ifdef TEST_MODE
 	BOOL AutoTest();
 #endif

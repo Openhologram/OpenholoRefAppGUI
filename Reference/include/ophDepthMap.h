@@ -166,7 +166,10 @@ public:
 		dm_config_ = config;
 	};
 	void setResolution(ivec2 resolution);
-	uint* getPercent() { return &n_percent; }
+	uint* getProgress() { return &m_nProgress; }
+
+
+	void normalize();
 
 public:
 	inline void setFieldLens(Real fieldlens) { dm_config_.fieldLength = fieldlens; }
@@ -220,9 +223,9 @@ private:
 
 	Real*					img_src;							///< CPU variable - image source data, values are from 0 to 1.
 	Real*					dmap_src;							///< CPU variable - depth map data, values are from 0 to 1.
-	Real*					depth_index;						///< CPU variable - quantized depth map data.
+	short*					depth_index;						///< CPU variable - quantized depth map data.
 	int*					alpha_map;							///< CPU variable - calculated alpha map data, values are 0 or 1.
-
+	vector<short>			depth_fill;
 	Real*					dmap;								///< CPU variable - physical distances of depth map.
 
 	Real					dstep;								///< the physical increment of each depth map layer.
@@ -232,7 +235,7 @@ private:
 	OphDepthMapConfig		dm_config_;							///< structure variable for depthmap hologram configuration.
 
 
-	uint n_percent;
+	uint m_nProgress;
 };
 
 #endif //>__ophDepthMap_h

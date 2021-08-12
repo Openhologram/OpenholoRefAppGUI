@@ -1,0 +1,33 @@
+<TriMesh>
+  <!-- About points -->
+  <FieldLength>1000e-3</FieldLength> <!-- Double Type -->
+  
+  <ScaleX>0.005</ScaleX>
+  <ScaleY>0.005</ScaleY>
+  <ScaleZ>0.005</ScaleZ>
+  <ShiftX>0.0</ShiftX>
+  <ShiftY>0.0</ShiftY>
+  <ShiftZ>0.1</ShiftZ>
+
+  <LampDirectionX>0</LampDirectionX>
+  <LampDirectionY>0.3</LampDirectionY>
+  <LampDirectionZ>1</LampDirectionZ>
+  
+  <!-- H/W -->
+  <IMG_Rotation>1</IMG_Rotation> <!-- Default 0 -->
+  <IMG_Merge>0</IMG_Merge> <!-- Valid only if WaveNum is greater than 1 -->
+  
+  <DoublePrecision>1</DoublePrecision> <!-- Default 1 -->
+  <SLM_PixelPitchX>4.3e-6</SLM_PixelPitchX> <!-- Double Type -->
+  <SLM_PixelPitchY>4.3e-6</SLM_PixelPitchY> <!-- Double Type -->
+  <SLM_PixelNumX>1920</SLM_PixelNumX> <!-- Integer Type -->
+  <SLM_PixelNumY>1080</SLM_PixelNumY> <!-- Integer Type -->
+  <SLM_WaveNum>1</SLM_WaveNum> <!-- Integer Type -->
+  <SLM_WaveLength_1>640e-9</SLM_WaveLength_1> <!-- Double Type -->
+  <SLM_WaveLength_2>532e-9</SLM_WaveLength_2> <!-- Double Type -->
+  <SLM_WaveLength_3>473e-9</SLM_WaveLength_3> <!-- Double Type -->
+  
+  <!-- GPU -->
+  <NumOfStream>0</NumOfStream>
+
+</TriMesh>

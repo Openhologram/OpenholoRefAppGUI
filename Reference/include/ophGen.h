@@ -62,7 +62,7 @@ struct OphWRPConfig;
 
 /**
 * @ingroup gen
-* @brief 
+* @brief
 * @author
 */
 class GEN_DLL ophGen : public Openholo
@@ -73,12 +73,14 @@ public:
 		ENCODE_PHASE,
 		ENCODE_AMPLITUDE,
 		ENCODE_REAL,
+		ENCODE_IMAGINEARY,
 		ENCODE_SIMPLENI,
 		ENCODE_BURCKHARDT,
 		ENCODE_TWOPHASE,
 		ENCODE_SSB,
 		ENCODE_OFFSSB,
-		ENCODE_SYMMETRIZATION
+		ENCODE_SIMPLEBINARY,
+		ENCODE_EDBINARY
 	};
 
 public:
@@ -100,14 +102,14 @@ public:
 	*				If the function succeeds, the return value is <B>encoded complex field data's pointer</B>.\n
 	*				If the function fails, the return value is <B>nullptr</B>.
 	*/
-	inline Real** getEncodedBuffer(void) { return holo_encoded; }
+	inline Real** getEncodedBuffer(void) { return m_lpEncoded; }
 	/**
-	* @brief Function for getting the normalized(0~255) complex field buffer 
+	* @brief Function for getting the normalized(0~255) complex field buffer
 	* @return Type: <B>uchar**</B>\n
 	*				If the function succeeds, the return value is <B>normalized complex field data's pointer</B>.\n
 	*				If the function fails, the return value is <B>nullptr</B>.
 	*/
-	inline uchar** getNormalizedBuffer(void) { return holo_normalized; }
+	inline uchar** getNormalizedBuffer(void) { return m_lpNormalized; }
 
 	/**
 	* @brief Initialize variables for Hologram complex field, encoded data, normalized data
@@ -145,6 +147,16 @@ public:
 	void propagationAngularSpectrum(int ch, Complex<Real>* input_u, Real propagation_dist, Real k, Real lambda);
 
 	/**
+	@brief Convolution between Complex arrays which have same size
+	@param[in] src1 convolution matrix 1
+	@param[in] src2 convolution matrix 2
+	@param[in] dst convolution destination matrix
+	@param[in] size matrix size
+	*/
+	void conv_fft2(Complex<Real>* src1, Complex<Real>* src2, Complex<Real>* dst, ivec2 size);
+
+
+	/**
 	* @brief Normalization function to save as image file after hologram creation
 	*/
 	void normalize(void);
@@ -161,7 +173,7 @@ public:
 	*				If the function fails, the return value is <B>false</B>.
 	*/
 	bool save(const char* fname, uint8_t bitsperpixel = 8, uchar* src = nullptr, uint px = 0, uint py = 0);
-	
+
 	/**
 	* @brief Function for loading image files
 	* @param[in] fname File name.
@@ -201,6 +213,9 @@ protected:
 
 
 public:
+
+	void setEncodeMethod(unsigned int ENCODE_FLAG) { ENCODE_METHOD = ENCODE_FLAG; }
+
 	/**
 	* @brief	Encoding Functions
 	* @details
@@ -214,8 +229,9 @@ public:
 	* @param[in] holo buffer to encode.
 	* @overload
 	*/
-	void encoding(unsigned int ENCODE_FLAG, Complex<Real>* holo = nullptr);
-	
+	//void encoding(unsigned int ENCODE_FLAG, Complex<Real>* holo = nullptr);
+	void encoding(unsigned int ENCODE_FLAG, Complex<Real>* holo = nullptr, Real* encoded = nullptr);
+
 	void encoding();
 	/*
 	* @brief	Encoding Functions
@@ -227,8 +243,27 @@ public:
 	* @param[in] holo buffer to encode.
 	* @overload
 	*/
-	virtual void encoding(unsigned int ENCODE_FLAG, unsigned int SSB_PASSBAND, Complex<Real>* holo = nullptr);
+	virtual void encoding(unsigned int ENCODE_FLAG, unsigned int SSB_PASSBAND, Complex<Real>* holo = nullptr, Real* encoded = nullptr);
 	enum SSB_PASSBAND { SSB_LEFT, SSB_RIGHT, SSB_TOP, SSB_BOTTOM };
+
+	/**
+	* @brief	Binary Encoding Functions
+	* @details
+	*	ENCODE_PHASE		:	Phase@n
+	*	ENCODE_AMPLITUDE	:	Amplitude@n
+	*	ENCODE_REAL			:	Real Part@n
+	*	ENCODE_SIMPLENI		:	Simple numerical interference@n
+	*	ENCODE_BURCKHARDT	:	Burckhardt encoding@n
+	*	ENCODE_TWOPHASE		:	Two Phase Encoding@n
+	*	ENCODE_SIMPLEBINARY	:	Simple binary encoding@n
+	*	ENCODE_EDBINARY		:	Error diffusion binary encoding
+	* @param[in] BIN_ENCODE_FLAG binarization method.
+	* @param[in] ENCODE_FLAG encoding method for binarization.
+	* @param[in] threshold threshold for binarization.
+	* @param[in] holo buffer to encode.
+	* @overload
+	*/
+	void encoding(unsigned int BIN_ENCODE_FLAG, unsigned int ENCODE_FLAG, Real threshold, Complex<Real>* holo = nullptr, Real* encoded = nullptr);
 
 public:
 
@@ -241,52 +276,58 @@ public:
 	*/
 	void waveCarry(Real carryingAngleX, Real carryingAngleY, Real distance);
 
-protected:	
+	void waveCarry(Complex<Real>* src, Complex<Real>* dst, Real wavelength, int carryIdxX, int carryIdxY);
+protected:
 	/// Encoded hologram size, varied from encoding type.
-	ivec2					encode_size; 
+	ivec2					m_vecEncodeSize;
 	/// Encoding method flag.
 	int						ENCODE_METHOD;
 	/// Passband in Single-side band encoding.
 	int						SSB_PASSBAND;
 	/// Elapsed time of generate hologram.
-	Real					elapsedTime;
+	Real					m_elapsedTime;
 	/// buffer to encoded.
-	Real**					holo_encoded;
+	Real**					m_lpEncoded;
 	/// buffer to normalized.
-	uchar**					holo_normalized;
+	uchar**					m_lpNormalized;
 
 private:
 	/// previous number of channel.
-	int						nOldChannel;
+	int						m_nOldChannel;
 
 protected:
-	Real					m_nFieldLength;
+	Real					m_dFieldLength;
 	int						m_nStream;
+
+	/// buffer to conv_fft2
+	Complex<Real>*			src1FT;
+	Complex<Real>*			src2FT;
+	Complex<Real>*			dstFT;
 
 public:
 	void transVW(int nSize, Real *dst, Real *src);
 	int getStream() { return m_nStream; }
-	Real getFieldLength() { return m_nFieldLength; }
+	Real getFieldLength() { return m_dFieldLength; }
 	/**
 	* @brief Function for getting encode size
 	* @return Type: <B>ivec2&</B>\n
 	*				If the function succeeds, the return value is <B>encode size</B>.\n
 	*				If the function fails, the return value is <B>nullptr</B>.
 	*/
-	ivec2& getEncodeSize(void) { return encode_size; }
+	ivec2& getEncodeSize(void) { return m_vecEncodeSize; }
 
 	/**
 	* @brief Function for setting buffer size
 	* @param[in] resolution buffer size.
 	*/
 	void setResolution(ivec2 resolution);
-	
+
 	/**
-	* @brief Function for getting elapsed time.	
+	* @brief Function for getting elapsed time.
 	* @return Type: <B>Real</B>\n
 	*				If the function succeeds, the return value is <B>elapsed time</B>.
 	*/
-	Real getElapsedTime() { return elapsedTime; };
+	Real getElapsedTime() { return m_elapsedTime; };
 
 protected:
 	/**
@@ -296,6 +337,7 @@ protected:
 	* @param[in] size size of encode.
 	*/
 	void RealPart(Complex<Real>* holo, Real* encoded, const int size);
+	void ImaginearyPart(Complex<Real>* holo, Real* encoded, const int size);
 
 	void Phase(Complex<Real>* holo, Real* encoded, const int size);
 	void Amplitude(Complex<Real>* holo, Real* encoded, const int size);
@@ -313,22 +355,48 @@ protected:
 	void singleSideBand(Complex<Real>* holo, Real* encoded, const ivec2 holosize, int passband);
 
 	/**
-	* @brief	Encoding method.
-	* @param[in] holo Source data.
-	* @param[out] encoded Destination data.
-	* @param[in] sig_loc Signal location.@n
-	*			sig_loc[0]: upper or lower half, sig_loc[1]:left or right half.
-	*/
-	void encodeSymmetrization(Complex<Real>* holo, Real* encoded, const ivec2 sig_loc);
-	/**
 	* @brief	Frequency shift
 	* @param[in] src Source data.
 	* @param[out] dst Destination data.
-	* @param[in] holosize 
+	* @param[in] holosize
 	* @param[in] shift_x X pixel value to shift
 	* @param[in] shift_y Y pixel value to shift
 	*/
 	void freqShift(Complex<Real>* src, Complex<Real>* dst, const ivec2 holosize, int shift_x, int shift_y);
+
+
+public:
+	enum ED_WType { FLOYD_STEINBERG, SINGLE_RIGHT, SINGLE_DOWN, ITERATIVE_DESIGN };
+	bool saveRefImages(char* fnameW, char* fnameWC, char* fnameAS, char* fnameSSB, char* fnameHP, char* fnameFreq, char* fnameReal, char* fnameBin, char* fnameReconBin, char* fnameReconErr, char* fnameReconNo);
+
+protected:
+	/// Binary Encoding - Error diffusion
+	int ss;
+	Complex<Real>* AS;
+	Complex<Real>* normalized;
+	Complex<Real>* fftTemp;
+	Real* weight;
+	Complex<Real>* weightC;
+	Complex<Real>* freqW;
+	Real* realEnc;
+	Real* binary;
+	Real* maskSSB;
+	Real* maskHP;
+
+	bool binaryErrorDiffusion(Complex<Real>* holo, Real* encoded, const ivec2 holosize, const int type, Real threshold);
+	bool getWeightED(const ivec2 holosize, const int type, ivec2* pNw);
+	bool shiftW(ivec2 holosize);
+	void binarization(Complex<Real>* src, Real* dst, const int size, int ENCODE_FLAG, Real threshold);
+
+
+	//public:
+	//bool carrierWaveMultiplexingEncoding(char* dirName, uint ENCODE_METHOD, Real cenFxIdx, Real cenFyIdx, Real stepFx, Real stepFy, int nFx, int nFy);
+	//bool carrierWaveMultiplexingEncoding(char* dirName, uint ENCODE_METHOD, uint PASSBAND, Real cenFxIdx, Real cenFyIdx, Real stepFx, Real stepFy, int nFx, int nFy);
+
+	//protected:
+
+
+
 public:
 	/**
 	* @brief Fresnel propagation
@@ -347,7 +415,7 @@ public:
 	*/
 	void fresnelPropagation(Complex<Real>* in, Complex<Real>* out, Real distance, uint channel);
 protected:
-	/** 
+	/**
 	* @brief Encode the CGH according to a signal location parameter.
 	* @param[in] bCPU Select whether to operate with CPU or GPU
 	* @param[in] sig_location Signal location@n
@@ -386,7 +454,7 @@ protected:
 	* @param[in] shift_phase_val output variable.
 	* @param[in] idx the current pixel position.
 	* @param[in] sig_location signal location.
-	* @see encodingSideBand_CPU, encodeSymmetrization
+	* @see encodingSideBand_CPU
 	*/
 	void getShiftPhaseValue(Complex<Real>& shift_phase_val, int idx, ivec2 sig_location);
 
@@ -398,7 +466,24 @@ protected:
 	* @param[in] rand_phase random or not.
 	*/
 	void getRandPhaseValue(Complex<Real>& rand_phase_val, bool rand_phase);
-	
+
+	void ScaleChange(Real *src, Real *dst, int nSize, Real scaleX, Real scaleY, Real scaleZ);
+	void GetMaxMin(Real *src, int len, Real& max, Real& min);
+
+public:
+
+	void AngularSpectrum(Complex<Real> *src, Complex<Real> *dst, Real lambda, Real distance);
+	void RS_Propagation(vec3 src, Complex<Real> *dst, Real lambda, Real distance, Real amplitude);
+	void RS_Propagation(uchar *src, Complex<Real> *dst, Real lambda, Real distance);
+	void Fresnel_Convolution(vec3 src, Complex<Real> *dst, Real lambda, Real distance, Real amplitude);
+	void Fresnel_FFT(Complex<Real> *src, Complex<Real> *dst, Real lambda, Real waveRatio, Real distance);
+	bool readImage(const char* fname, bool bRGB);
+
+	uchar* imgRGB;
+	uchar* imgDepth;
+	int m_width;
+	int m_height;
+	int m_bpp;
 protected:
 	/**
 	* @brief Pure virtual function for override in child classes
@@ -428,7 +513,7 @@ struct GEN_DLL OphPointCloudConfig {
 	/// Tilt angle for spatial filtering
 	vec2 tilt_angle;
 
-	OphPointCloudConfig() 
+	OphPointCloudConfig()
 		: scale(0, 0, 0), distance(0), filter_shape_flag(0), focal_length_lens_in(0), focal_length_lens_out(0), focal_length_lens_eye_piece(0), tilt_angle(0, 0)
 	{}
 };
@@ -466,7 +551,7 @@ struct GEN_DLL OphPointCloudData {
 * num_of_depth = DEFAULT_DEPTH_QUANTIZATION
 * else
 * num_of_depth = NUMBER_OF_DEPTH_QUANTIZATION
-* </pre> 
+* </pre>
 * @param std::vector<int> Used when only few specific depth levels are rendered, usually for test purpose
 * @param bool if true, change the depth quantization from the default value.
 * @param unsigned int default value of the depth quantization - 256
@@ -497,7 +582,7 @@ struct GEN_DLL OphDepthMapConfig {
 	/// If true, random phase is imposed on each depth layer.
 	bool				RANDOM_PHASE;
 
-	OphDepthMapConfig() :fieldLength(0), near_depthmap(0), far_depthmap(0), num_of_depth(0){}
+	OphDepthMapConfig() :fieldLength(0), near_depthmap(0), far_depthmap(0), num_of_depth(0) {}
 };
 
 /**
@@ -525,9 +610,9 @@ struct GEN_DLL OphWRPConfig {
 	/// fieldLength variable for viewing window.
 	Real fieldLength;
 	/// Scaling factor of coordinate of point cloud
-	vec3 scale;	
+	vec3 scale;
 	/// Number of wavefront recording plane(WRP) 
-	int num_wrp; 
+	int num_wrp;
 	/// Location distance of WRP
 	Real wrp_location;
 	/// Distance of Hologram plane
