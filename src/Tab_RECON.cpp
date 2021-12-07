@@ -22,10 +22,24 @@ CTab_RECON::CTab_RECON(CWnd* pParent /*=nullptr*/)
 	, m_from(0)
 	, m_to(0)
 	, m_step(0)
+	, m_eyeLen(0.0)
+	, m_eyePupilDiameter(0.0)
+	, m_eyeBoxSizeScale(0.0)
+	, m_eyeBoxSizeX(0.0)
+	, m_eyeBoxSizeY(0.0)
+	, m_eyeCenterX(0.0)
+	, m_eyeCenterY(0.0)
+	, m_eyeCenterZ(0.0)
+	, m_eyeFocusDistance(0.0)
+	, m_resultSizeScale(0.0)
+	, m_ratioAtPupil(0.0)
+	, m_ratioAtRetina(0.0)
 	, m_bReal(false)
 	, m_bImag(false)
 	, m_bPhase(false)
 	, m_bAmpli(false)
+	, m_bCreatePupilFieldImg(FALSE)
+	, m_bCenteringRetinaImg(FALSE)
 {
 
 }
@@ -40,6 +54,21 @@ void CTab_RECON::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_FROM, m_from);
 	DDX_Text(pDX, IDC_EDIT_TO, m_to);
 	DDX_Text(pDX, IDC_EDIT_STEP, m_step);
+	DDX_Text(pDX, IDC_EDIT_EYE_LENGTH, m_eyeLen);
+	DDX_Text(pDX, IDC_EDIT_EYE_PUPIL_DIAMETER, m_eyePupilDiameter);
+	DDX_Text(pDX, IDC_EDIT_EYE_BOX_SIZE_SCALE, m_eyeBoxSizeScale);
+	DDX_Text(pDX, IDC_EDIT_EYE_BOX_SIZE_X, m_eyeBoxSizeX);
+	DDX_Text(pDX, IDC_EDIT_EYE_BOX_SIZE_Y, m_eyeBoxSizeY);
+	DDX_Text(pDX, IDC_EDIT_EYE_CENTER_X, m_eyeCenterX);
+	DDX_Text(pDX, IDC_EDIT_EYE_CENTER_Y, m_eyeCenterY);
+	DDX_Text(pDX, IDC_EDIT_EYE_CENTER_Z, m_eyeCenterZ);
+	DDX_Text(pDX, IDC_EDIT_EYE_FOCUS_DISTANCE, m_eyeFocusDistance);
+	DDX_Text(pDX, IDC_EDIT_RESULT_SIZE_SCALE, m_resultSizeScale);
+	DDX_Text(pDX, IDC_EDIT_RATIO_AT_PUPIL, m_ratioAtPupil);
+	DDX_Text(pDX, IDC_EDIT_RATIO_AT_RETINA, m_ratioAtRetina);
+	DDX_Check(pDX, IDC_CHECK_CREATE_PUPIL_FIELD_IMG, m_bCreatePupilFieldImg);
+	DDX_Check(pDX, IDC_CHECK_CENTERING_RETINA_IMG, m_bCenteringRetinaImg);
+	DDX_Control(pDX, IDC_CHECK_REVERSE, m_chkReverse);
 }
 
 
@@ -55,6 +84,8 @@ BEGIN_MESSAGE_MAP(CTab_RECON, CDialogEx)
 	ON_BN_CLICKED(IDC_READ_CONFIG_REC, &CTab_RECON::OnBnClickedReadConfigRec)
 	ON_BN_CLICKED(IDC_RADIO_POSITION, &CTab_RECON::OnBnClickedRadioPosition)
 	ON_BN_CLICKED(IDC_RADIO_FOCUS, &CTab_RECON::OnBnClickedRadioFocus)
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_CHECK_REVERSE, &CTab_RECON::OnBnClickedCheckReverse)
 END_MESSAGE_MAP()
 
 
@@ -123,7 +154,6 @@ void CTab_RECON::OnBnClickedBtnLoadPhase()
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
 			return;
 		}
-
 		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 	}
 }
@@ -163,7 +193,6 @@ void CTab_RECON::OnBnClickedBtnLoadAmplitude()
 			AfxMessageBox(L"BMP load failed : Please show LOG.");
 			return;
 		}
-
 		AfxGetMainWnd()->SendMessage(LOAD_DATA, LOAD_DATA, 0);
 	}
 }
@@ -324,13 +353,39 @@ void CTab_RECON::OnBnClickedReadConfigRec()
 		AfxMessageBox(L"it is not xml config file for ophRec.");
 		return;
 	}
-
+	m_bPhase = false;
+	m_bAmpli = false;
+	m_bReal = false;
+	m_bImag = false;
+	
 	auto context = m_rec->getContext();
 	auto config = m_rec->getConfig();
+	auto imgCfg = m_rec->getImageConfig();
 
 	m_from = config.SimulationFrom;
 	m_to = config.SimulationTo;
 	m_step = config.SimulationStep;
+	m_eyeBoxSizeScale = config.EyeBoxSizeScale;
+	m_eyeBoxSizeX = config.EyeBoxSize[_X];
+	m_eyeBoxSizeY = config.EyeBoxSize[_Y];
+	m_eyeCenterX = config.EyeCenter[_X];
+	m_eyeCenterY = config.EyeCenter[_Y];
+	m_eyeCenterZ = config.EyeCenter[_Z];
+	m_eyeLen = config.EyeLength;
+	m_eyePupilDiameter = config.EyePupilDiaMeter;
+	m_eyeFocusDistance = config.EyeFocusDistance;
+	m_resultSizeScale = config.ResultSizeScale;
+	m_ratioAtPupil = config.RatioAtPupil;
+	m_ratioAtRetina = config.RatioAtRetina;
+	m_bCenteringRetinaImg = config.CenteringRetinaImg;
+	m_bCreatePupilFieldImg = config.CreatePupilFieldImg;
+	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
+
+
+
 	//auto config = m_pDepthMap->getConfig();
 
 	//m_nearDepth = m_pDepthMap->getNearDepth();
@@ -343,14 +398,17 @@ void CTab_RECON::OnBnClickedReadConfigRec()
 	//GetDlgItem(IDC_LOAD_RGB_IMG_DM)->EnableWindow(TRUE);
 
 
-	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	pParent->SetWaveNum(context.waveNum);
 	pParent->SetWaveLength(context.wave_length);
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
-	//pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
 	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
+	GetDlgItem(IDC_BTN_LOAD_AMPLITUDE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BTN_LOAD_FRINGE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BTN_LOAD_IMAG)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BTN_LOAD_PHASE)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BTN_LOAD_REAL)->EnableWindow(TRUE);
 	UpdateData(FALSE);
 }
 
@@ -358,6 +416,7 @@ void CTab_RECON::OnBnClickedReadConfigRec()
 LRESULT CTab_RECON::OnReconstruct(WPARAM wParam, LPARAM lParam)
 {
 	UpdateData(TRUE);
+
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	OphRecConfig config = m_rec->getConfig();
 	config.SimulationFrom = m_from;
@@ -368,7 +427,26 @@ LRESULT CTab_RECON::OnReconstruct(WPARAM wParam, LPARAM lParam)
 	config.SimulationPos[_X] = ((CButton *)GetDlgItem(IDC_CHECK_X))->GetCheck();
 	config.SimulationPos[_Y] = ((CButton *)GetDlgItem(IDC_CHECK_Y))->GetCheck();
 	config.SimulationPos[_Z] = ((CButton *)GetDlgItem(IDC_CHECK_Z))->GetCheck();
+	/*
+	config.EyeBoxSizeScale = m_eyeBoxSizeScale;
+	config.EyeBoxSize[_X] = m_eyeBoxSizeX;
+	config.EyeBoxSize[_Y] =	m_eyeBoxSizeY;
+	config.EyeCenter[_X] = m_eyeCenterX;
+	config.EyeCenter[_Y] = m_eyeCenterY;
+	config.EyeCenter[_Z] = m_eyeCenterZ;
+	config.EyeLength = m_eyeLen;
+	config.EyePupilDiaMeter = m_eyePupilDiameter;
+	config.EyeFocusDistance = m_eyeFocusDistance;
+	config.ResultSizeScale = m_resultSizeScale;
+	config.RatioAtPupil = m_ratioAtPupil;
+	config.RatioAtRetina = m_ratioAtRetina;
+	config.CenteringRetinaImg = m_bCenteringRetinaImg;
+	config.CreatePupilFieldImg = m_bCreatePupilFieldImg;
+	*/
+
+	int mode = (int)wParam;
 	m_rec->setConfig(config);
+	m_rec->SetMode(mode);
 
 	//m_pDepthMap->setMode(!dlg->UseGPGPU());
 	//m_pDepthMap->setViewingWindow(dlg->UseVW());
@@ -382,6 +460,7 @@ LRESULT CTab_RECON::OnReconstruct(WPARAM wParam, LPARAM lParam)
 	parammeter *pParam = new parammeter;
 	pParam->pInst = m_rec;
 	pParam->pDialog = &progress;
+	pParam->flag = (UINT)wParam;
 
 	CWinThread* pThread = AfxBeginThread(CallFuncRECON, pParam);
 	progress.m_bGen = false;
@@ -414,6 +493,9 @@ LRESULT CTab_RECON::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 	SetCurrentDirectory(szCurPath);
 
 	_tcscpy_s(m_resultPath, path.GetBuffer());
+	m_rec->setImageMerge(wParam & 0x1 ? true : false);
+	m_rec->setImageRotate(wParam & 0x2 ? true : false);
+	m_rec->setImageFlip((int)lParam);
 
 	if (!path.GetLength()) return FALSE;
 	m_rec->SaveImage(CW2A(path));
@@ -453,4 +535,24 @@ void CTab_RECON::OnBnClickedRadioFocus()
 	GetDlgItem(IDC_CHECK_X)->EnableWindow(FALSE);
 	GetDlgItem(IDC_CHECK_Y)->EnableWindow(FALSE);
 	GetDlgItem(IDC_CHECK_Z)->EnableWindow(FALSE);
+}
+
+
+void CTab_RECON::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+
+	m_rec->release();
+}
+
+
+void CTab_RECON::OnBnClickedCheckReverse()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	UpdateData(TRUE);
+	m_from = -m_from;
+	m_to = -m_to;
+	UpdateData(FALSE);
 }

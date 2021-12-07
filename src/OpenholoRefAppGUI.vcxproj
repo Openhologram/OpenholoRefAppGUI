@@ -120,6 +120,7 @@
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;_OPENMP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)freeglut_3.0.0\include\;$(SolutionDir)Reference\include\;$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -258,9 +259,11 @@
   <ItemGroup>
     <Image Include="..\..\..\..\Desktop\MFC\OpenholoRefAppGUI\OpenholoRefAppGUI\res\OpenHolo_icon.bmp" />
     <Image Include="res\KETI_logo.png" />
+    <Image Include="res\OpenHolo.ico" />
     <Image Include="res\OpenholoRefAppGUI.ico" />
     <Image Include="res\OpenHolo_icon.bmp" />
     <Image Include="res\OpenHolo_icon.ico" />
+    <Image Include="res\OpenHolo_logo.ico" />
     <Image Include="res\OpenHolo_logo.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

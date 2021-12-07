@@ -48,7 +48,7 @@
 #pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
 #endif
 
-
+#pragma commnet(lib, "UxTheme.lib")
 
 #ifdef _UNICODE
 #if defined _M_IX86

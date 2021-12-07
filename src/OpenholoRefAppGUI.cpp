@@ -41,6 +41,7 @@ BOOL COpenholoRefApp::InitInstance()
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.
 	
+	// 중복 실행 체크
 	HANDLE hMutex = NULL;
 	hMutex = CreateMutex(NULL, TRUE, L"OpenholoRefAppGUI");
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -63,7 +64,11 @@ BOOL COpenholoRefApp::InitInstance()
 
 	
 
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtSetBreakAlloc(3908);
+	//_CrtSetBreakAlloc(260);
+	//_CrtSetBreakAlloc(254);
+
 	INITCOMMONCONTROLSEX InitCtrls;
 	InitCtrls.dwSize = sizeof(InitCtrls);
 	// Set this to include all the common control classes you want to use
@@ -130,6 +135,6 @@ BOOL COpenholoRefApp::InitInstance()
 int COpenholoRefApp::ExitInstance()
 {
 	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
-	//_CrtDumpMemoryLeaks();
+	_CrtDumpMemoryLeaks();
 	return CWinApp::ExitInstance();
 }

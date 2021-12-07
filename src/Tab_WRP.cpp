@@ -168,6 +168,7 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 
 	scale = m_pWRP->getScale();
 	auto context = m_pWRP->getContext();
+	ImageConfig imgCfg = m_pWRP->getImageConfig();
 	m_scaleX = scale[_X];
 	m_scaleY = scale[_Y];
 	m_scaleZ = scale[_Z];
@@ -181,6 +182,9 @@ void CTab_WRP::OnBnClickedReadConfigWrp()
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	AfxGetMainWnd()->SendMessage(LOAD_CFG, LOAD_CFG, context.waveNum);
 
 	m_bConfig = true;
@@ -334,14 +338,16 @@ LRESULT CTab_WRP::OnGenerate(WPARAM wParam, LPARAM lParam)
 	}
 
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-
+	int mode = (int)wParam;
 	auto context = m_pWRP->getContext();
 	m_pWRP->setDistance(m_distance);
+	m_pWRP->SetMode(mode);
 	m_pWRP->setMode(!dlg->UseGPGPU());
 	m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
 	m_pWRP->setLocation(m_locationWRP);
 	m_pWRP->setViewingWindow(dlg->UseVW());
-
+	m_pWRP->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
+	m_pWRP->SetMaxThreadNum(dlg->m_nCurThread);
 	dlg->ForegroundConsole();
 
 	Dialog_Progress progress;
@@ -402,6 +408,9 @@ LRESULT CTab_WRP::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 	_tcscpy_s(m_resultPath, path.GetBuffer());
 
 	if (!path.GetLength()) return FALSE;
+	m_pWRP->setImageMerge(wParam & 0x1 ? true : false);
+	m_pWRP->setImageRotate(wParam & 0x2 ? true : false);
+	m_pWRP->setImageFlip((int)lParam);
 	int ch = m_pWRP->getContext().waveNum;
 	auto size = m_pWRP->getEncodeSize();
 	m_pWRP->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);

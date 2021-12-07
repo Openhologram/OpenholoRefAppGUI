@@ -150,12 +150,16 @@ void CTab_LF::OnBnClickedReadConfig_LF()
 	GetDlgItem(IDC_FIND_DIR)->EnableWindow(TRUE);
 
 	auto context = m_pLightField->getContext();
+	auto imgCfg = m_pLightField->getImageConfig();
 	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	pParent->SetWaveNum(context.waveNum);
 	pParent->SetWaveLength(context.wave_length);
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	UpdateData(FALSE);
@@ -302,11 +306,14 @@ LRESULT CTab_LF::OnGenerate(WPARAM wParam, LPARAM lParam)
 	m_pLightField->setDistRS2Holo(m_distance);
 	m_pLightField->setNumImage(m_numimgX, m_numimgY);
 
+	int mode = (int)wParam;
+
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-
+	m_pLightField->SetMode(mode);
 	m_pLightField->setMode(!dlg->UseGPGPU());
+	m_pLightField->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
 	m_pLightField->setViewingWindow(dlg->UseVW());
-
+	m_pLightField->SetMaxThreadNum(dlg->m_nCurThread);
 	dlg->ForegroundConsole();
 
 	Dialog_Progress progress;
@@ -365,9 +372,13 @@ LRESULT CTab_LF::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 	if (!path.GetLength()) return FALSE;
 	_tcscpy_s(m_resultPath, path.GetBuffer());
 
+	m_pLightField->setImageMerge(wParam & 0x1 ? true : false);
+	m_pLightField->setImageRotate(wParam & 0x2 ? true : false);
+	m_pLightField->setImageFlip((int)lParam);
 	ivec2 encodeSize = m_pLightField->getEncodeSize();
 	int ch = m_pLightField->getContext().waveNum;
 	m_pLightField->save(CW2A(path), 8 * ch, nullptr, encodeSize[_X], encodeSize[_Y]);
+	//m_pLightField->save(CW2A(path), 8 * ch, m_pLightField->m_tmp2, encodeSize[_X], encodeSize[_Y]);
 
 	pParent->OpenExplorer(path);
 	return TRUE;

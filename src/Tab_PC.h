@@ -37,6 +37,11 @@ public:
 	afx_msg LRESULT OnEncode(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSaveIMG(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSaveOHC(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnLoadOHC(WPARAM wParam, LPARAM lParam);
+	/*
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	*/
 	bool CheckConfig();
 
 #ifdef TEST_MODE
@@ -65,4 +70,10 @@ public:
 	int		m_idxDiff;
 
 	BOOL m_bTest;
+	/*
+	CFont m_font;
+	CMFCButton m_btnLoadPC;
+	CMFCButton m_btnLoadCfg;
+	CMFCButton m_btnViewer;
+	*/
 };

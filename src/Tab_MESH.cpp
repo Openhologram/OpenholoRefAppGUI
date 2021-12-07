@@ -153,6 +153,7 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	}
 
 	auto context = m_pMesh->getContext();
+	auto imgCfg = m_pMesh->getImageConfig();
 	m_scaleX = m_pMesh->getObjSize()[_X];
 	m_scaleY = m_pMesh->getObjSize()[_Y];
 	m_scaleZ = m_pMesh->getObjSize()[_Z];
@@ -169,6 +170,9 @@ void CTab_MESH::OnBnClickedReadConfigMesh()
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	AfxGetMainWnd()->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	m_bConfig = true;
@@ -315,9 +319,14 @@ LRESULT CTab_MESH::OnGenerate(WPARAM wParam, LPARAM lParam)
 	UpdateData(TRUE);
 	auto context = m_pMesh->getContext();
 
+	int mode = (int)wParam;
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	m_pMesh->setMode(!dlg->UseGPGPU());
-	//m_pMesh->setPrecision(true);
+	m_pMesh->SetMode(mode);
+	m_pMesh->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
+
+	m_pMesh->SetMaxThreadNum(dlg->m_nCurThread);
+
 	dlg->ForegroundConsole();
 
 	Dialog_Progress progress;
@@ -380,6 +389,9 @@ LRESULT CTab_MESH::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 
 	if (!path.GetLength()) return FALSE;
 
+	m_pMesh->setImageMerge(wParam & 0x1 ? true : false);
+	m_pMesh->setImageRotate(wParam & 0x2 ? true : false);
+	m_pMesh->setImageFlip((int)lParam);
 	ivec2 encode_size = m_pMesh->getEncodeSize();
 	int ch = m_pMesh->getContext().waveNum;
 	m_pMesh->save(CW2A(path), 8 * ch, nullptr, encode_size[_X], encode_size[_Y]);

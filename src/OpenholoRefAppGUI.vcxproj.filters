@@ -160,6 +160,12 @@
     <Image Include="res\OpenHolo_logo.png">
       <Filter>99_etc\Resource Files</Filter>
     </Image>
+    <Image Include="res\OpenHolo.ico">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
+    <Image Include="res\OpenHolo_logo.ico">
+      <Filter>99_etc\Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenholoRefAppGUI.rc">

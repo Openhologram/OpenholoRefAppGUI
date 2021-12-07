@@ -144,7 +144,6 @@ public:
 	*/
 	Real generateHologram(void);
 
-	void encodeHologram(void);
 	virtual void encoding(unsigned int ENCODE_FLAG);
 	virtual void encoding(unsigned int ENCODE_FLAG, unsigned int SSB_PASSBAND);
 	
@@ -200,8 +199,8 @@ private:
 
 	void transVW();
 
-	void calcHoloCPU(void);
-	void calcHoloGPU(void);
+	void calcHoloCPU(int ch = 0);
+	void calcHoloGPU(int ch = 0);
 	void propagationAngularSpectrumGPU(uint channel, cufftDoubleComplex* input_u, Real propagation_dist);
 
 protected:
@@ -214,7 +213,7 @@ private:
 	bool					is_ViewingWindow;
 	bool					bSinglePrecision;
 	unsigned char*			depth_img;
-	unsigned char*			rgb_img;
+	vector<uchar*>			m_vecRGB;
 	ivec2					m_vecRGBImg;
 	ivec2					m_vecDepthImg;
 	unsigned char*			img_src_gpu;						///< GPU variable - image source data, values are from 0 to 255.

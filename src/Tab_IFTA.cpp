@@ -153,6 +153,7 @@ void CTab_IFTA::OnBnClickedReadConfig_Ifta()
 	}
 
 	auto context = m_pIFTA->getContext();
+	auto imgCfg = m_pIFTA->getImageConfig();
 	OphIFTAConfig config = m_pIFTA->getConfig();
 
 	m_nearDepth = config.near_depthmap;
@@ -166,6 +167,9 @@ void CTab_IFTA::OnBnClickedReadConfig_Ifta()
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	AfxGetMainWnd()->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	m_bConfig = true;
@@ -254,21 +258,6 @@ UINT CallFuncIFTA(void* param)
 {
 	parammeter *pParam = (parammeter *)param;
 
-#if 0
-	Console::getInstance()->SetColor(Console::Color::YELLOW, Console::Color::BLACK);
-
-	ophIFTA *pIFTA = ((ophIFTA *)pParam->pInst);
-	Complex<Real> **pp = pIFTA->getComplexField();
-
-	for (int i = 0; i < 10; i++) {
-		((ophIFTA*)pParam->pInst)->generateHologram();
-		for (uint i = 0; i < pIFTA->getContext().waveNum; i++) {
-			printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
-		}
-	}
-
-	pParam->pDialog->m_bFinished = TRUE;
-#else
 	((ophIFTA*)pParam->pInst)->generateHologram();
 	pParam->pDialog->m_bFinished = TRUE;
 
@@ -279,7 +268,6 @@ UINT CallFuncIFTA(void* param)
 	for (uint i = 0; i < pIFTA->getContext().waveNum; i++) {
 		printf("=> Complex Field[%d][0] = %.15e / %.15e \n", i, pp[i][0][_RE], pp[i][0][_IM]);
 	}
-#endif
 	Console::getInstance()->ResetColor();
 	delete pParam;
 
@@ -477,6 +465,9 @@ LRESULT CTab_IFTA::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 	_tcscpy_s(m_resultPath, path.GetBuffer());
 
 	if (!path.GetLength()) return FALSE;
+
+	bool bRotate = (bool)wParam;
+	m_pIFTA->setImageRotate(wParam & 0x2 ? true : false);
 	int ch = m_pIFTA->getContext().waveNum;
 	auto size = m_pIFTA->getEncodeSize();
 	m_pIFTA->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);

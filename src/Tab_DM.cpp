@@ -155,8 +155,8 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	}
 
 	auto context = m_pDepthMap->getContext();
+	auto imgCfg = m_pDepthMap->getImageConfig();
 	//auto config = m_pDepthMap->getConfig();
-
 	m_nearDepth = m_pDepthMap->getNearDepth();
 	m_farDepth = m_pDepthMap->getFarDepth();
 	m_numDepth = m_pDepthMap->getNumOfDepth();
@@ -173,6 +173,9 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	UpdateData(FALSE);
@@ -344,10 +347,6 @@ void CTab_DM::Generate()
 	progress.m_bGen = true;
 	progress.DoModal();
 	progress.DestroyWindow();
-
-	char szMsg[256] = { 0, };
-	sprintf_s(szMsg, "Total Elapsed Time: %lf (s)\n", m_pDepthMap->getElapsedTime());
-	((COpenholoRefAppDlg *)AfxGetMainWnd())->report(szMsg);
 }
 /*
 void CTab_DM::OnBnClickedGenerate_DM()
@@ -495,7 +494,6 @@ BOOL CTab_DM::OnInitDialog()
 void CTab_DM::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-
 	// TODO: Add your message handler code here
 	m_pDepthMap->release();
 }
@@ -562,10 +560,13 @@ LRESULT CTab_DM::OnGenerate(WPARAM wParam, LPARAM lParam)
 	config.RANDOM_PHASE = 0;
 	m_pDepthMap->setConfig(config);
 
+	int mode = (int)wParam;
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	m_pDepthMap->SetMode(mode);
 	m_pDepthMap->setMode(!dlg->UseGPGPU());
 	m_pDepthMap->setViewingWindow(dlg->UseVW());
-
+	m_pDepthMap->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
+	m_pDepthMap->SetMaxThreadNum(dlg->m_nCurThread);
 	dlg->ForegroundConsole();
 
 	Dialog_Progress progress;
@@ -583,6 +584,8 @@ LRESULT CTab_DM::OnGenerate(WPARAM wParam, LPARAM lParam)
 	progress.DoModal();
 	progress.DestroyWindow();
 	MakeFileName();
+	m_bDimg = FALSE;
+	m_bRGBimg = FALSE;
 	return TRUE;
 }
 
@@ -601,17 +604,15 @@ LRESULT CTab_DM::OnEncode(WPARAM wParam, LPARAM lParam)
 	case ophGen::ENCODE_SIMPLENI:
 	case ophGen::ENCODE_BURCKHARDT:
 	case ophGen::ENCODE_TWOPHASE:
-		((ophGen*)m_pDepthMap)->encoding(ophGen::ENCODE_FLAG(idx));
-		m_pDepthMap->normalize();
+		m_pDepthMap->encoding(ophGen::ENCODE_FLAG(idx));
 		break;
 	case ophGen::ENCODE_SSB:
 	case ophGen::ENCODE_OFFSSB:
 		m_pDepthMap->encoding(ophGen::ENCODE_FLAG(idx), (int)lParam);
-		m_pDepthMap->normalize();
 		break;
 	}
 
-	
+	m_pDepthMap->normalize();
 	return TRUE;
 }
 
@@ -631,6 +632,10 @@ LRESULT CTab_DM::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 	_tcscpy_s(m_resultPath, path.GetBuffer());
 
 	if (!path.GetLength()) return FALSE;
+	
+	m_pDepthMap->setImageRotate(wParam & 0x2 ? true : false);
+	m_pDepthMap->setImageMerge(wParam & 0x1 ? true : false);
+	m_pDepthMap->setImageFlip((int)lParam);
 	auto size = m_pDepthMap->getEncodeSize();
 	int ch = m_pDepthMap->getContext().waveNum;
 	m_pDepthMap->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);

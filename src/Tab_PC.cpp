@@ -7,7 +7,6 @@
 #include "Tab_PC.h"
 #include "Console.h"
 #include "afxdialogex.h"
-#include "ophIFTA.h"
 #include "ophSimulator.h"
 // CTab_PC dialog
 
@@ -19,6 +18,10 @@
 
 
 #define KEY_NAME L"PointCloud"
+#define BK_COLOR RGB(50, 50, 50)
+#define TEXT_COLOR RGB(255, 255, 255)
+
+
 
 IMPLEMENT_DYNAMIC(CTab_PC, CDialogEx)
 
@@ -54,6 +57,11 @@ void CTab_PC::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SCALE_Y_PC, m_scaleY);
 	DDX_Text(pDX, IDC_SCALE_Z_PC, m_scaleZ);
 	DDX_Text(pDX, IDC_DISTANCE_PC, m_distance);
+	/*
+	DDX_Control(pDX, IDC_LOAD_PC, m_btnLoadPC);
+	DDX_Control(pDX, IDC_READ_CONFIG_PC, m_btnLoadCfg);
+	DDX_Control(pDX, IDC_VIEW_PC, m_btnViewer);
+	*/
 }
 
 
@@ -72,6 +80,9 @@ BEGIN_MESSAGE_MAP(CTab_PC, CDialogEx)
 	ON_MESSAGE(ENCODE, &CTab_PC::OnEncode)
 	ON_MESSAGE(SAVE_IMG, &CTab_PC::OnSaveIMG)
 	ON_MESSAGE(SAVE_OHC, &CTab_PC::OnSaveOHC)
+	ON_MESSAGE(LOAD_OHC, &CTab_PC::OnLoadOHC)
+	ON_WM_ERASEBKGND()
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 // CTab_PC message handlers
@@ -161,12 +172,16 @@ void CTab_PC::OnBnClickedReadConfig_PC()
 	m_distance = m_pPointCloud->getDistance();
 
 	auto context = m_pPointCloud->getContext();
+	ImageConfig imgCfg = m_pPointCloud->getImageConfig();
 	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	pParent->SetWaveNum(context.waveNum);
 	pParent->SetWaveLength(context.wave_length);
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
 	pParent->SetPixelPitch(context.pixel_pitch[_X], context.pixel_pitch[_Y]);
 	pParent->SetShift(context.shift[_X], context.shift[_Y], context.shift[_Z]);
+	pParent->SetImageRotate(imgCfg.bRotation);
+	pParent->SetImageMerge(imgCfg.bMergeImage);
+	pParent->SetImageFlip(imgCfg.nFlip);
 	pParent->SendMessage(LOAD_CFG, LOAD_CFG, 0);
 
 	m_bConfig = true;
@@ -296,7 +311,41 @@ BOOL CTab_PC::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"R-S diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->AddString(L"Fresnel diffaction");
 	((CComboBox*)GetDlgItem(IDC_DIFF_METHOD_PC))->SetCurSel(m_idxDiff);
+	/*
+	m_font.CreateFontW(
+		10, // nHeight
+		5, // nWidth
+		0, // nEscapement
+		0, // nOrientation
+		1, // nWeight
+		0, // bItalic
+		0, // bUnderline 
+		0, // cStrikeOut 
+		0, // nCharSet
+		OUT_DEFAULT_PRECIS, // nOutPrecision 
+		0,                              // nClipPrecision 
+		DEFAULT_QUALITY,       // nQuality
+		DEFAULT_PITCH | FF_DONTCARE,  // nPitchAndFamily 
+		L"굴림"); // lpszFacename
 
+	SetWindowTheme(GetDlgItem(IDC_STATIC_GROUP_LOAD)->m_hWnd, L"", L"");
+	SetWindowTheme(GetDlgItem(IDC_STATIC_GROUP_POINT)->m_hWnd, L"", L"");
+	
+	m_btnLoadPC.EnableWindowsTheming(FALSE);
+	m_btnLoadCfg.EnableWindowsTheming(FALSE);
+	m_btnViewer.EnableWindowsTheming(FALSE);
+	
+	m_btnLoadPC.SetFaceColor(BK_COLOR);
+	m_btnLoadPC.SetTextColor(TEXT_COLOR);
+	m_btnLoadCfg.SetFaceColor(BK_COLOR);
+	m_btnLoadCfg.SetTextColor(TEXT_COLOR);
+	m_btnViewer.SetFaceColor(BK_COLOR);
+	m_btnViewer.SetTextColor(TEXT_COLOR);
+	//m_btnLoadPC.SetFont(&m_font);
+	//m_btnLoadCfg.SetFont(&m_font);
+	//m_btnViewer.SetFont(&m_font);
+	*/
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -305,7 +354,7 @@ BOOL CTab_PC::OnInitDialog()
 void CTab_PC::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-
+	//m_font.DeleteObject();
 	// TODO: Add your message handler code here
 	m_pPointCloud->release();
 }
@@ -355,17 +404,22 @@ LRESULT CTab_PC::OnGenerate(WPARAM wParam, LPARAM lParam)
 		return FALSE;
 	}
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	int mode = (int)wParam;
 	auto context = m_pPointCloud->getContext();
 	m_pPointCloud->setDistance(m_distance);
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
-	m_pPointCloud->setMode(!dlg->UseGPGPU());
+	m_pPointCloud->setMode(mode & MODE_CPU ? true : false);
+	m_pPointCloud->SetMode(mode);
 	m_pPointCloud->setViewingWindow(dlg->UseVW());
 	m_pPointCloud->setPixelNumber(dlg->m_pixelnumX, dlg->m_pixelnumY);
 	m_pPointCloud->setPixelPitch(dlg->m_pixelpitchX, dlg->m_pixelpitchY);
+	m_pPointCloud->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
 	for (int i = 0; i < context.waveNum; i++)
 		m_pPointCloud->setWaveLength(dlg->m_wavelength[i], i);
 
 	dlg->ForegroundConsole();
+
+	m_pPointCloud->SetMaxThreadNum(dlg->m_nCurThread);
 
 	Dialog_Progress progress;
 
@@ -382,6 +436,7 @@ LRESULT CTab_PC::OnGenerate(WPARAM wParam, LPARAM lParam)
 	progress.m_bGen = true;
 	progress.DoModal();
 	progress.DestroyWindow();
+	return TRUE;
 }
 
 
@@ -401,7 +456,7 @@ LRESULT CTab_PC::OnEncode(WPARAM wParam, LPARAM lParam)
 	case ophGen::ENCODE_SIMPLENI:
 	case ophGen::ENCODE_BURCKHARDT:
 	case ophGen::ENCODE_TWOPHASE:
-		((ophGen*)m_pPointCloud)->encoding(ophGen::ENCODE_FLAG(idx));
+		m_pPointCloud->encoding(ophGen::ENCODE_FLAG(idx));
 		break;
 	case ophGen::ENCODE_SSB:
 	case ophGen::ENCODE_OFFSSB:
@@ -409,15 +464,6 @@ LRESULT CTab_PC::OnEncode(WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	m_pPointCloud->normalize();
-
-	Complex<Real> **pp = m_pPointCloud->getComplexField();
-	Real **pp1 = m_pPointCloud->getEncodedBuffer();
-	uchar **pp2 = m_pPointCloud->getNormalizedBuffer();
-	printf("Complex Buffer ======> %e , %e\n", pp[0][0][_RE], pp[0][0][_IM]);
-	printf("Encoded Buufer ======> %e\n", pp1[0][0]);
-	printf("Normalized Buffer ===> %d\n", pp2[0][0]);
-
-
 	return TRUE;
 
 }
@@ -436,14 +482,14 @@ LRESULT CTab_PC::OnSaveIMG(WPARAM wParam, LPARAM lParam)
 
 
 	_tcscpy_s(m_resultPath, path.GetBuffer());
+	m_pPointCloud->setImageRotate(wParam & 0x2 ? true : false);
+	m_pPointCloud->setImageMerge(wParam & 0x1 ? true : false);
+	m_pPointCloud->setImageFlip((int)lParam);
 	auto size = m_pPointCloud->getEncodeSize();
 	int ch = m_pPointCloud->getContext().waveNum;
-	auto context = m_pPointCloud->getContext();
-
 	m_pPointCloud->save(CW2A(path), 8 * ch, nullptr, size[_X], size[_Y]);
 
 	pParent->OpenExplorer(path);
-
 	return TRUE;
 }
 
@@ -467,3 +513,121 @@ LRESULT CTab_PC::OnSaveOHC(WPARAM wParam, LPARAM lParam)
 	pParent->OpenExplorer(path);
 	return TRUE;
 }
+
+LRESULT CTab_PC::OnLoadOHC(WPARAM wParam, LPARAM lParam)
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	// TODO: Add your control notification handler code here
+	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
+
+
+	TCHAR szCurPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, szCurPath);
+
+	LPTSTR szFilter = L"OHC File (*.ohc) |*.ohc|";
+
+	CFileDialog FileDialog(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, szFilter, this);
+	CString szOhcPath = AfxGetApp()->GetProfileString(KEY_NAME, L"OHC Path", szCurPath);
+	FileDialog.m_ofn.lpstrInitialDir = szOhcPath;
+	CString path;
+	if (FileDialog.DoModal() == IDOK)
+	{
+		CString ext = FileDialog.GetFileExt();
+		if (!ext.CompareNoCase(L"ohc"))
+			path = FileDialog.GetPathName();
+		else return FALSE;
+	}
+
+	SetCurrentDirectory(szCurPath);
+	if (!path.GetLength()) return FALSE;
+	AfxGetApp()->WriteProfileString(KEY_NAME, L"OHC Path", path.Left(path.ReverseFind('\\') + 1));
+
+	auto begin = CUR_TIME;
+	if (!m_pPointCloud->loadAsOhc(CW2A(path)))
+	{
+		AfxMessageBox(L"it is not ohc file.");
+		return FALSE;
+	}
+	auto context = m_pPointCloud->getContext();
+	dlg->m_pixelnumX = context.pixel_number[_X];
+	dlg->m_pixelnumY = context.pixel_number[_Y];
+	dlg->m_pixelpitchX = context.pixel_pitch[_X];
+	dlg->m_pixelpitchY = context.pixel_pitch[_Y];
+	
+	for (int i = 0; i < context.waveNum; i++)
+		dlg->m_wavelength[i] = context.wave_length[i];
+	dlg->UpdateData(FALSE);
+
+	printf("%f ", ELAPSED_TIME(begin, CUR_TIME));
+	return TRUE;
+}
+/*
+
+BOOL CTab_PC::OnEraseBkgnd(CDC* pDC)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	CRect rect;
+
+	GetClientRect(rect);
+
+	pDC->FillSolidRect(rect, RGB(50, 50, 50));
+
+	return TRUE;
+	//return CDialogEx::OnEraseBkgnd(pDC);
+}
+
+
+HBRUSH CTab_PC::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+	// TODO:  여기서 DC의 특성을 변경합니다.
+
+	switch (nCtlColor)
+	{
+	case CTLCOLOR_STATIC:
+		{
+			//pDC->SetBkMode(TRANSPARENT);
+			pDC->SetBkColor(BK_COLOR);
+			pDC->SetTextColor(TEXT_COLOR);
+
+			return (HBRUSH)GetStockObject(NULL_BRUSH);
+		}
+	case CTLCOLOR_EDIT:
+	{
+		if (pWnd->GetDlgCtrlID() == 1001)
+		{
+			pDC->SetBkColor(BK_COLOR);
+			pDC->SetTextColor(TEXT_COLOR);
+			hbr = ::CreateSolidBrush(BK_COLOR);
+		}
+	}
+	case CTLCOLOR_LISTBOX:
+	{
+		if (pWnd->GetDlgCtrlID() == 1000)
+		{
+			pDC->SetBkColor(BK_COLOR);
+			pDC->SetTextColor(TEXT_COLOR);
+			hbr = ::CreateSolidBrush(BK_COLOR);
+		}
+	}
+	}
+
+	switch (pWnd->GetDlgCtrlID())
+	{
+	case IDC_DISTANCE_PC:
+	case IDC_SCALE_X_PC:
+	case IDC_SCALE_Y_PC:
+	case IDC_SCALE_Z_PC:
+	case IDC_LOAD_PC:
+	{
+		pDC->SetBkColor(BK_COLOR);
+		pDC->SetTextColor(TEXT_COLOR);
+		hbr = ::CreateSolidBrush(BK_COLOR);
+	}
+	}
+
+	// TODO:  기본값이 적당하지 않으면 다른 브러시를 반환합니다.
+
+	return hbr;
+}
+*/
