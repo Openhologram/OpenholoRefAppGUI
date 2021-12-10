@@ -13,7 +13,6 @@ class CTab_DM;
 class CTab_LF;
 class CTab_MESH;
 class CTab_WRP;
-class CTab_IFTA;
 class CTab_RECON;
 
 #define GENERATE	WM_USER + 1
@@ -23,6 +22,7 @@ class CTab_RECON;
 #define LOAD_CFG	WM_USER + 5
 #define LOAD_DATA	WM_USER + 6
 #define RECONSTRUCT	WM_USER + 7
+#define LOAD_OHC	WM_USER + 8
 
 // COpenholoRefAppDlg dialog
 class COpenholoRefAppDlg : public CDialogEx
@@ -69,6 +69,10 @@ protected:
 	afx_msg LRESULT OnReceive(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnBnClickedButtonExpand();
 	afx_msg void OnCbnSelchangeEncodeMethod();
+	afx_msg void OnCbnSelchangeComboAlgorithm();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnCbnSelchangeComboAlgorithmRecon();
+	afx_msg void OnCbnSelchangeEncodePassband();
 	DECLARE_MESSAGE_MAP()
 
 
@@ -78,7 +82,7 @@ public:
 	void ForegroundConsole();
 	char* GetDirectoryPath(LPCTSTR szfilter, CWnd *pParentWnd);
 	BOOL IsGeforceGPU();
-	void report(char *szMsg);
+
 	CString GetFileName();
 	CString GetFileNameExt();
 	void initUI();
@@ -90,6 +94,7 @@ public:
 	double GetRotate() { return m_rotate; }
 	int GetFlip() { return m_flip; }
 	bool UseGPGPU() { return m_buttonGPU.GetCheck(); }
+
 	bool UseVW() { return m_buttonViewingWindow.GetCheck(); }
 	void ReloadContents();
 
@@ -105,11 +110,15 @@ public:
 	CTabCtrl	m_Tab;
 	CComboBox	m_Algo;
 	CComboBox	m_AlgoRecon;
+	CComboBox	m_reconFrom;
+	CComboBox	m_ImgFlip;
 	IStream		*pStreamOph;
 	IStream		*pStreamKeti;
 
 	int			m_iEncode;
 	int			m_iPassband;
+	int			m_iRecon;
+	int			m_iFrom;
 
 	double		m_rotate;
 	int			m_flip;
@@ -119,7 +128,6 @@ public:
 	CTab_LF		*pTabLF;
 	CTab_MESH	*pTabMESH;
 	CTab_WRP	*pTabWRP;
-	CTab_IFTA	*pTabIFTA;
 	CTab_RECON	*pTabRECON;
 	Option		*m_option;
 
@@ -136,6 +144,7 @@ public:
 	CComboBox	m_encodePassband;
 	CButton		m_buttonGPU;
 	CButton		m_buttonViewingWindow;
+	CButton		m_buttonRandomPhase;
 	std::vector<CDialogEx *> m_vector;
 
 	// 항상 위에 표시
@@ -148,6 +157,11 @@ public:
 	unsigned int	m_pixelnumY;
 	double			m_wavelength[3];
 	int				m_nWave;
+	// 이미지를 180도 회전 시킨다.
+	BOOL			m_bImgRotate;
+	BOOL			m_bImgMerge;
+	int				m_nImgFlip;
+
 	void SetShift(double shiftX, double shiftY, double shiftZ) {
 		m_shiftX = shiftX;
 		m_shiftY = shiftY;
@@ -169,12 +183,33 @@ public:
 	}
 
 	void SetWaveLength(double *wave) {
-		for (int i = 0; i < m_nWave && i < 3; i++) {
-			m_wavelength[i] = wave[i];
+		for (int i = 0; i < 3; i++) {
+			if (i < m_nWave)
+				m_wavelength[i] = wave[i];
+			else
+				m_wavelength[i] = 0.0;
 		}
 	}
-	afx_msg void OnCbnSelchangeComboAlgorithm();
-	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-	afx_msg void OnCbnSelchangeComboAlgorithmRecon();
-	afx_msg void OnCbnSelchangeEncodePassband();
+
+	void SetImageFlip(int flip) { m_nImgFlip = flip; }
+
+	void SetImageRotate(bool bRotate)
+	{
+		m_bImgRotate = bRotate;
+	}
+
+	void SetImageMerge(bool bMerge)
+	{
+		m_bImgMerge = bMerge;
+	}
+
+	int m_nMaxThread;
+	int m_nCurThread;
+	afx_msg void OnBnClickedLoadOhc();
+	afx_msg void OnBnClickedGpuCheck();
+	CButton m_buttonLoadOhc;
+	CStatic m_staticAlgo;
+	CButton m_buttonFastMath;
+	CButton m_buttonSingle;
+	CButton m_buttonDouble;
 };
