@@ -310,7 +310,6 @@ LRESULT CTab_LF::OnGenerate(WPARAM wParam, LPARAM lParam)
 
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	m_pLightField->SetMode(mode);
-	m_pLightField->setMode(!dlg->UseGPGPU());
 	m_pLightField->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
 	m_pLightField->setViewingWindow(dlg->UseVW());
 	m_pLightField->SetMaxThreadNum(dlg->m_nCurThread);

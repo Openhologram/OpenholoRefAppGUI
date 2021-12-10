@@ -563,7 +563,6 @@ LRESULT CTab_DM::OnGenerate(WPARAM wParam, LPARAM lParam)
 	int mode = (int)wParam;
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
 	m_pDepthMap->SetMode(mode);
-	m_pDepthMap->setMode(!dlg->UseGPGPU());
 	m_pDepthMap->setViewingWindow(dlg->UseVW());
 	m_pDepthMap->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
 	m_pDepthMap->SetMaxThreadNum(dlg->m_nCurThread);

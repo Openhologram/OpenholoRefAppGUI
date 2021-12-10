@@ -321,7 +321,6 @@ LRESULT CTab_MESH::OnGenerate(WPARAM wParam, LPARAM lParam)
 
 	int mode = (int)wParam;
 	COpenholoRefAppDlg *dlg = (COpenholoRefAppDlg *)AfxGetMainWnd();
-	m_pMesh->setMode(!dlg->UseGPGPU());
 	m_pMesh->SetMode(mode);
 	m_pMesh->SetRandomPhase(dlg->m_buttonRandomPhase.GetCheck());
 

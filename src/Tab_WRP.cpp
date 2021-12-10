@@ -342,7 +342,6 @@ LRESULT CTab_WRP::OnGenerate(WPARAM wParam, LPARAM lParam)
 	auto context = m_pWRP->getContext();
 	m_pWRP->setDistance(m_distance);
 	m_pWRP->SetMode(mode);
-	m_pWRP->setMode(!dlg->UseGPGPU());
 	m_pWRP->setScale(vec3(m_scaleX, m_scaleY, m_scaleZ));
 	m_pWRP->setLocation(m_locationWRP);
 	m_pWRP->setViewingWindow(dlg->UseVW());

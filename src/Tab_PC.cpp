@@ -408,7 +408,6 @@ LRESULT CTab_PC::OnGenerate(WPARAM wParam, LPARAM lParam)
 	auto context = m_pPointCloud->getContext();
 	m_pPointCloud->setDistance(m_distance);
 	m_pPointCloud->setScale(m_scaleX, m_scaleY, m_scaleZ);
-	m_pPointCloud->setMode(mode & MODE_CPU ? true : false);
 	m_pPointCloud->SetMode(mode);
 	m_pPointCloud->setViewingWindow(dlg->UseVW());
 	m_pPointCloud->setPixelNumber(dlg->m_pixelnumX, dlg->m_pixelnumY);
