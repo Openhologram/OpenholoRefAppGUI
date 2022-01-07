@@ -666,14 +666,17 @@ bool COpenholoRefAppDlg::SaveImage(CString &path)
 	if (FileDialog.DoModal() == IDOK)
 	{
 		int idx = FileDialog.m_ofn.nFilterIndex;
-		if (!FileDialog.GetFileExt().Compare(szExtension[idx - 1]))
-			path.Format(L"%s\\%s",
-				FileDialog.GetFolderPath(),
-				FileDialog.GetFileName());
-		else
+
+		CString szExt = FileDialog.GetFileExt();
+		/*
+		if (!szExt.Compare(szExtension[idx - 1]))
 			path.Format(L"%s.%s",
-			FileDialog.GetPathName(),
-			szExtension[idx - 1]);
+				FileDialog.GetPathName(),
+				szExtension[idx - 1]);
+		else
+		*/
+			path.Format(L"%s",
+				FileDialog.GetPathName());
 		AfxGetApp()->WriteProfileString(L"Result", L"Image Path", path.Left(path.ReverseFind('\\') + 1));
 		return true;
 	}

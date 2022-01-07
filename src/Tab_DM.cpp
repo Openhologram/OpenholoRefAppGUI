@@ -168,6 +168,7 @@ void CTab_DM::OnBnClickedReadConfig_DM()
 
 
 	COpenholoRefAppDlg *pParent = (COpenholoRefAppDlg *)AfxGetMainWnd();
+	pParent->m_buttonRandomPhase.SetCheck(m_pDepthMap->getConfig().random_phase);
 	pParent->SetWaveNum(context.waveNum);
 	pParent->SetWaveLength(context.wave_length);
 	pParent->SetPixelNum(context.pixel_number[_X], context.pixel_number[_Y]);
@@ -550,14 +551,14 @@ LRESULT CTab_DM::OnGenerate(WPARAM wParam, LPARAM lParam)
 	}
 
 	OphDepthMapConfig config = m_pDepthMap->getConfig();
-	config.DEFAULT_DEPTH_QUANTIZATION = m_numDepth;
+	config.default_depth_quantization = m_numDepth;
 	config.far_depthmap = m_farDepth;
 	config.near_depthmap = m_nearDepth;
 	//config.fieldLength = ;
-	config.FLAG_CHANGE_DEPTH_QUANTIZATION = 1;
-	config.NUMBER_OF_DEPTH_QUANTIZATION = m_numDepth;
+	config.change_depth_quantization = 1;
+	config.num_of_depth_quantization = m_numDepth;
 	config.num_of_depth = m_numDepth;
-	config.RANDOM_PHASE = 0;
+	config.random_phase = 0;
 	m_pDepthMap->setConfig(config);
 
 	int mode = (int)wParam;
